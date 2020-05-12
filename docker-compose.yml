@@ -1,0 +1,11 @@
+version: '3.1'
+
+services:
+  mongodb:
+    image: bitnami/mongodb:4.2.6
+    container_name: mongodb
+    ports:
+      - 27017:27017
+    environment:
+      MONGODB_USERNAME: 'root'
+      ALLOW_EMPTY_PASSWORD: 'yes'

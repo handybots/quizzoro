@@ -1,0 +1,69 @@
+long_poller: {}
+
+vars:
+  quizzes_chat: -418035651
+
+strings:
+  general: '🌍 Общее'
+  art: '🎨 Искусство'
+  vehicles: '🚘 Транспорт'
+  celebrities: '🌟 Знаменитости'
+  films: '🎥 Фильмы'
+  music: '🎹 Музыка'
+
+buttons:
+  start: '📊 Старт!'
+  stats: '💡 Статистика'
+
+keyboards:
+  menu:
+    - - start
+    - - stats
+
+inline_buttons:
+  category:
+    unique: category
+  general:
+    unique: category
+    callback_data: general
+    text: '🌍 Общее'
+  art:
+    unique: category
+    callback_data: art
+    text: '🎨 Искусство'
+  vehicles:
+    unique: category
+    callback_data: vehicles
+    text: '🚘 Транспорт'
+  celebrities:
+    unique: category
+    callback_data: celebrities
+    text: '🌟 Знаменитости'
+  films:
+    unique: category
+    callback_data: films
+    text: '🎥 Фильмы'
+  music:
+    unique: category
+    callback_data: music
+    text: '🎹 Музыка'
+  random:
+    unique: category
+    callback_data: random
+    text: '🎲 Случайная'
+  bad_quiz:
+    unique: bad_quiz
+    callback_data: ${.}
+    text: 'Удалить'
+
+inline_keyboards:
+  categories:
+    - - general
+      - art
+    - - vehicles
+      - celebrities
+    - - films
+      - music
+    - - random
+  moderation:
+    - - bad_quiz
