@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/demget/quizzorobot/translate"
+	"github.com/demget/quizzorobot/yandextr"
 	"go.uber.org/atomic"
 )
 
@@ -15,7 +15,7 @@ var currentSID atomic.String
 func init() {
 	go func() {
 		for {
-			sid, err := translate.ParseSID()
+			sid, err := yandextr.ParseSID()
 			if err != nil {
 				log.Println(err)
 				return
@@ -31,7 +31,7 @@ func translateText(text string) (string, error) {
 	if sid == "" {
 		return "", errors.New("sid is empty")
 	}
-	result, err := translate.Translate(currentSID.Load(), text)
+	result, err := yandextr.Translate(currentSID.Load(), text)
 	if err != nil {
 		return "", err
 	}
