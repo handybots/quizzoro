@@ -40,6 +40,22 @@ func Connect(name, url string) (*DB, error) {
 }
 
 func (db *DB) CreateIndexes() (err error) {
+	_, err = db.Users.Indexes().
+		CreateOne(context.Background(), mongo.IndexModel{
+			Keys: bson.D{{"id", 1}},
+		})
+	if err != nil {
+		return
+	}
+
+	_, err = db.Quizzes.Indexes().
+		CreateOne(context.Background(), mongo.IndexModel{
+			Keys: bson.D{{"id", 1}},
+		})
+	if err != nil {
+		return
+	}
+
 	_, err = db.Quizzes.Indexes().
 		CreateOne(context.Background(), mongo.IndexModel{
 			Keys: bson.D{
@@ -47,5 +63,9 @@ func (db *DB) CreateIndexes() (err error) {
 				{"question", 1},
 			},
 		})
+	if err != nil {
+		return
+	}
+
 	return
 }
