@@ -58,6 +58,7 @@ func main() {
 	b.Handle("/stop", h.OnStop)
 	b.Handle(tb.OnPollAnswer, h.OnPollAnswer)
 	b.Handle(b.Button("start"), h.OnCategories)
+	b.Handle(b.Button("stats"), h.OnStats)
 	b.Handle(b.InlineButton("category"), h.OnCategory)
 	b.Handle(b.InlineButton("bad_quiz"), h.OnBadQuiz)
 

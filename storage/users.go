@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"context"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -21,6 +23,8 @@ type UsersStorage interface {
 	PassedPolls(id int) (UserPolls, error)
 	AddPoll(id int, poll UserPoll) error
 	Cache(id int) (UserCache, error)
+	TopStats() (Stats, error)
+	Stats(id int) (UserStats, error)
 }
 
 type UsersColl struct {
@@ -109,4 +113,56 @@ func (db *UsersColl) Cache(id int) (UserCache, error) {
 	return *user.Cache, db.
 		FindOne(nil, User{ID: id}, opt).
 		Decode(&user)
+}
+
+func (db *UsersColl) TopStats() (Stats, error) {
+	cur, err := db.Aggregate(context.Background(), bson.A{
+		// bson.M{"$match": bson.M{"polls": bson.M{"$gt": "[]"}}},
+		bson.M{"$addFields": statsAddFields},
+		bson.M{"$sort": bson.M{"correct": -1}},
+		bson.M{"$limit": 3},
+	})
+	if err != nil {
+		return Stats{}, err
+	}
+
+	var results []struct {
+		User      `bson:",inline"`
+		Correct   int `bson:"correct"`
+		Incorrect int `bson:"incorrect"`
+	}
+	if err := cur.All(context.Background(), &results); err != nil {
+		return Stats{}, err
+	}
+
+	stats := make([]UserStats, len(results))
+	users := make([]User, len(results))
+
+	for i, result := range results {
+		users[i] = result.User
+		stats[i] = UserStats{
+			Place:     i + 1,
+			Correct:   result.Correct,
+			Incorrect: result.Incorrect,
+		}
+	}
+
+	return Stats{
+		Users: users,
+		Stats: stats,
+	}, nil
+}
+
+func (db *UsersColl) Stats(id int) (UserStats, error) {
+	cur, err := db.Aggregate(context.Background(), bson.A{
+		bson.M{"$match": bson.M{"id": id}},
+		bson.M{"$addFields": statsAddFields},
+		bson.M{"$project": bson.M{"correct": 1, "incorrect": 1}},
+	})
+	if err != nil {
+		return UserStats{}, err
+	}
+
+	var stats UserStats
+	return stats, cur.Decode(&stats)
 }
