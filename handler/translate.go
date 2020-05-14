@@ -10,7 +10,7 @@ import (
 	"go.uber.org/atomic"
 )
 
-var currentSID atomic.String
+var currentSID atomic.String // 5b2d03ac.5ebdabcb.3dfe4bf4-0-0
 
 func init() {
 	go func() {

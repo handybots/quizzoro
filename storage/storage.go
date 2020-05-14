@@ -41,9 +41,9 @@ func (s Strings) Value() (driver.Value, error) {
 	return json.Marshal(s)
 }
 
-func (s Strings) Scan(src interface{}) error {
-	if v, ok := src.([]byte); ok {
+func (s *Strings) Scan(src interface{}) error {
+	if v, ok := src.([]uint8); ok {
 		return json.Unmarshal(v, &s)
 	}
-	return errors.New("storage: Strings must be used only with json field")
+	return errors.New("storage: Strings must be used with json field only")
 }

@@ -1,8 +1,6 @@
 package storage
 
 import (
-	"encoding/json"
-
 	sq "github.com/Masterminds/squirrel"
 	"github.com/fatih/structs"
 	"github.com/jmoiron/sqlx"
@@ -56,13 +54,9 @@ func (polls PassedPolls) Contains(pollID string) bool {
 }
 
 func (db *PollsTable) Create(poll Poll) error {
-	data := structs.Map(poll)
-	data["answers"], _ = json.Marshal(data["answers"])
-	data["answers_eng"], _ = json.Marshal(data["answers_eng"])
-
 	q, args, err := sq.
 		Insert("polls").
-		SetMap(data).
+		SetMap(structs.Map(poll)).
 		ToSql()
 	if err != nil {
 		return err

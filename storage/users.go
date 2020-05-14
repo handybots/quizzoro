@@ -21,7 +21,7 @@ type UsersStorage interface {
 	Cache(id int) (UserCache, error)
 	AddPoll(id int, poll PassedPoll) error
 	PassedPolls(id int) (PassedPolls, error)
-	TopStats() (Stats, error)
+	TopStats() ([]UserStats, error)
 	Stats(id int) (UserStats, error)
 }
 
@@ -79,7 +79,6 @@ func (db *UsersTable) Cache(id int) (cache UserCache, err error) {
 
 func (db *UsersTable) AddPoll(id int, poll PassedPoll) error {
 	const q = `INSERT INTO passed_polls (user_id, poll_id, correct) VALUES (?, ?, ?)`
-
 	_, err := db.Exec(q, id, poll.ID, poll.Correct)
 	return err
 }
@@ -89,10 +88,25 @@ func (db *UsersTable) PassedPolls(id int) (polls PassedPolls, err error) {
 	return polls, db.Get(&polls, q, id)
 }
 
-func (db *UsersTable) TopStats() (Stats, error) {
-	panic("implement me")
+func (db *UsersTable) TopStats() (stats []UserStats, err error) {
+	const q = `
+		SELECT *,
+			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=1) correct,
+			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=0) incorrect
+		FROM users
+		ORDER BY correct
+		LIMIT 3`
+
+	return stats, db.Select(&stats, q)
 }
 
-func (db *UsersTable) Stats(id int) (UserStats, error) {
-	panic("implement me")
+func (db *UsersTable) Stats(id int) (stats UserStats, err error) {
+	const q = `
+		SELECT *,
+			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=1) correct,
+			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=0) incorrect
+		FROM users
+		WHERE id=?`
+
+	return stats, db.Get(&stats, q, id)
 }
