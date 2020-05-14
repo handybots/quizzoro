@@ -21,17 +21,17 @@ type PollsTable struct {
 
 type Poll struct {
 	Model       `structs:",omitempty"`
-	ID          string   `db:"id" structs:"id,omitempty"`
-	MessageID   string   `db:"message_id" structs:"message_id,omitempty"`
-	ChatID      int64    `db:"chat_id" structs:"chat_id,omitempty"`
-	Category    string   `db:"category" structs:"category,omitempty"`
-	Difficulty  string   `db:"difficulty" structs:"difficulty,omitempty"`
-	Question    string   `db:"question" structs:"question,omitempty"`
-	QuestionEng string   `db:"question_eng" structs:"question_eng,omitempty"`
-	Correct     string   `db:"correct" structs:"correct,omitempty"`
-	CorrectEng  string   `db:"correct_eng" structs:"correct_eng,omitempty"`
-	Answers     []string `db:"answers" structs:"answers,omitempty"`
-	AnswersEng  []string `db:"answers_eng" structs:"answers_eng,omitempty"`
+	ID          string  `db:"id" structs:"id,omitempty"`
+	MessageID   string  `db:"message_id" structs:"message_id,omitempty"`
+	ChatID      int64   `db:"chat_id" structs:"chat_id,omitempty"`
+	Category    string  `db:"category" structs:"category,omitempty"`
+	Difficulty  string  `db:"difficulty" structs:"difficulty,omitempty"`
+	Question    string  `db:"question" structs:"question,omitempty"`
+	QuestionEng string  `db:"question_eng" structs:"question_eng,omitempty"`
+	Correct     string  `db:"correct" structs:"correct,omitempty"`
+	CorrectEng  string  `db:"correct_eng" structs:"correct_eng,omitempty"`
+	Answers     Strings `db:"answers" structs:"answers,omitempty"`
+	AnswersEng  Strings `db:"answers_eng" structs:"answers_eng,omitempty"`
 }
 
 func (q Poll) MessageSig() (string, int64) {
