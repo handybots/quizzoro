@@ -27,12 +27,12 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return nil
 	}
 
-	correct, err := h.db.Quizzes.CorrectAnswer(pa.PollID)
+	correct, err := h.db.Polls.CorrectAnswer(pa.PollID)
 	if err != nil {
 		return err
 	}
 
-	poll := storage.UserPoll{
+	poll := storage.PassedPoll{
 		ID:      pa.PollID,
 		Correct: pa.Options[0] == correct,
 	}

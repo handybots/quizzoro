@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"database/sql"
 	"log"
 
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (h Handler) OnStart(m *tb.Message) {
@@ -21,17 +21,15 @@ func (h Handler) OnCategories(m *tb.Message) {
 }
 
 func (h Handler) onStart(m *tb.Message) error {
-	user, err := h.db.Users.Get(m.Sender.ID)
-	if err == mongo.ErrNoDocuments {
+	user, err := h.db.Users.ByID(m.Sender.ID)
+	if err == sql.ErrNoRows {
 		err := h.db.Users.Create(m.Sender.ID)
 		if err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
-	}
-
-	if user.State != storage.StateDefault {
+	} else if user.State != storage.StateDefault {
 		return nil // TODO: Send stop-message info
 	}
 

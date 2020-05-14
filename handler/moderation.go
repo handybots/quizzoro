@@ -13,7 +13,7 @@ func (h Handler) OnBadQuiz(c *tb.Callback) {
 }
 
 func (h Handler) onBadQuiz(c *tb.Callback) error {
-	if err := h.db.Quizzes.Delete(c.Data); err != nil {
+	if err := h.db.Polls.Delete(c.Data); err != nil {
 		return err
 	}
 	return h.b.Delete(c.Message)

@@ -1,71 +1,33 @@
 package storage
 
 import (
-	"context"
+	"time"
 
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
 )
 
 type DB struct {
-	cli *mongo.Client
-	*mongo.Database
+	*sqlx.DB
 
-	Users   *UsersColl
-	Quizzes *QuizzesColl
+	Users UsersStorage
+	Polls PollsStorage
 }
 
-func Connect(name, url string) (*DB, error) {
-	opt := options.Client().ApplyURI(url)
-
-	cli, err := mongo.Connect(context.Background(), opt)
+func Connect(url string) (*DB, error) {
+	db, err := sqlx.Open("mysql", url)
 	if err != nil {
 		return nil, err
 	}
 
-	db := &DB{
-		cli:      cli,
-		Database: cli.Database(name),
-	}
-
-	db.Users = &UsersColl{
-		Collection: db.Collection("users"),
-	}
-	db.Quizzes = &QuizzesColl{
-		Collection: db.Collection("quizzes"),
-	}
-
-	return db, db.CreateIndexes()
+	return &DB{
+		DB:    db,
+		Users: &UsersTable{DB: db},
+		Polls: &PollsTable{DB: db},
+	}, nil
 }
 
-func (db *DB) CreateIndexes() (err error) {
-	_, err = db.Users.Indexes().
-		CreateOne(context.Background(), mongo.IndexModel{
-			Keys: bson.D{{"id", 1}},
-		})
-	if err != nil {
-		return
-	}
-
-	_, err = db.Quizzes.Indexes().
-		CreateOne(context.Background(), mongo.IndexModel{
-			Keys: bson.D{{"id", 1}},
-		})
-	if err != nil {
-		return
-	}
-
-	_, err = db.Quizzes.Indexes().
-		CreateOne(context.Background(), mongo.IndexModel{
-			Keys: bson.D{
-				{"category", 1},
-				{"question", 1},
-			},
-		})
-	if err != nil {
-		return
-	}
-
-	return
+type Model struct {
+	CreatedAt time.Time `db:"created_at" structs:"created_at"`
+	UpdatedAt time.Time `db:"updated_at" structs:"updated_at"`
 }
