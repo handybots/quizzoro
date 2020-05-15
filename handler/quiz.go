@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"database/sql"
 	"log"
 	"strconv"
 	"strings"
@@ -10,7 +11,6 @@ import (
 
 	gt "github.com/bas24/googletranslatefree"
 	tb "github.com/demget/telebot"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func (h Handler) OnSkip(m *tb.Message) {
@@ -61,7 +61,7 @@ func (h Handler) onStop(m *tb.Message) error {
 
 	cache, err := h.db.Users.Cache(m.Sender.ID)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	_ = h.b.Delete(tb.StoredMessage{
@@ -80,8 +80,8 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
-	cached, err := h.db.Quizzes.ByQuestion(category, trivia.Question)
-	if err != mongo.ErrNoDocuments {
+	cached, err := h.db.Polls.ByQuestion(category, trivia.Question)
+	if err != sql.ErrNoRows {
 		return err
 	}
 	if err == nil {
@@ -141,17 +141,20 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
-	quiz := storage.Quiz{
-		PollID:     msg.Poll.ID,
-		MessageID:  strconv.Itoa(msg.ID),
-		ChatID:     h.conf.QuizzesChat,
-		Category:   category,
-		Difficulty: trivia.Difficulty,
-		Question:   trivia.Question,
-		Correct:    answers[correct],
-		Answers:    answers,
+	quiz := storage.Poll{
+		ID:          msg.Poll.ID,
+		MessageID:   strconv.Itoa(msg.ID),
+		ChatID:      h.conf.QuizzesChat,
+		Category:    category,
+		Difficulty:  trivia.Difficulty,
+		Question:    question,
+		Correct:     answers[correct],
+		Answers:     answers,
+		QuestionEng: trivia.Question,
+		CorrectEng:  trivia.CorrectAnswer,
+		AnswersEng:  append(trivia.IncorrectAnswers, trivia.CorrectAnswer),
 	}
-	if err := h.db.Quizzes.Create(quiz); err != nil {
+	if err := h.db.Polls.Create(quiz); err != nil {
 		return err
 	}
 
@@ -160,11 +163,12 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
+	cache := storage.UserCache{
+		MessageID: strconv.Itoa(msg.ID),
+		Category:  category,
+	}
 	return h.db.Users.Update(user.ID, storage.User{
-		State: storage.StateQuiz,
-		Cache: &storage.UserCache{
-			MessageID: strconv.Itoa(msg.ID),
-			Category:  category,
-		},
+		State:     storage.StateQuiz,
+		UserCache: cache,
 	})
 }

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"log"
+	"strconv"
 
 	"github.com/demget/quizzorobot/bot"
 	tb "github.com/demget/telebot"
@@ -24,9 +25,24 @@ func (h Handler) onStats(m *tb.Message) error {
 		return err
 	}
 
+	var chats []tb.Chat
+	for _, t := range top {
+		chat, err := h.b.ChatByID(strconv.Itoa(t.ID))
+		if err != nil {
+			return err
+		}
+		chats = append(chats, *chat)
+	}
+
+	statsx := bot.Stats{
+		Chats: chats,
+		Top:   top,
+		User:  stats,
+	}
+
 	_, err = h.b.Send(
 		m.Sender,
-		h.b.Text("stats", bot.Stats{Top: top, Stats: stats}),
+		h.b.Text("stats", statsx),
 		tb.ModeHTML)
 	return err
 }

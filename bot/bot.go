@@ -1,6 +1,9 @@
 package bot
 
-import "github.com/demget/quizzorobot/storage"
+import (
+	"github.com/demget/quizzorobot/storage"
+	tb "github.com/demget/telebot"
+)
 
 type Config struct {
 	// TODO: Replace with tb.ChatID
@@ -14,6 +17,7 @@ type Random struct {
 }
 
 type Stats struct {
-	Top   storage.Stats
-	Stats storage.UserStats
+	Chats []tb.Chat
+	Top   []storage.UserStats
+	User  storage.UserStats
 }

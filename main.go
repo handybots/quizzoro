@@ -40,10 +40,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	db, err := storage.Connect(
-		os.Getenv("MONGODB_NAME"),
-		os.Getenv("MONGODB_URL"))
+	db, err := storage.Connect(os.Getenv("MYSQL_URL"))
 	if err != nil {
+		log.Fatal(err)
+	}
+	if err := db.Ping(); err != nil {
 		log.Fatal(err)
 	}
 
