@@ -1,39 +1,49 @@
 package handler
 
 import (
-	"errors"
 	"log"
-	"strings"
 	"time"
 
-	"github.com/demget/quizzorobot/yandextr"
-	"go.uber.org/atomic"
+	"github.com/demget/quizzorobot/translate"
 )
-
-var currentSID atomic.String
 
 func init() {
 	go func() {
 		for {
-			sid, err := yandextr.ParseSID()
+			err := translate.Yandex.UpdateSID()
 			if err != nil {
 				log.Println(err)
 				return
 			}
-			currentSID.Store(sid)
+
 			time.Sleep(24 * time.Hour)
 		}
 	}()
 }
 
-func translateText(text string) (string, error) {
-	sid := currentSID.Load()
-	if sid == "" {
-		return "", errors.New("sid is empty")
+func translateText(input string) (string, error) {
+	var (
+		output string
+		err    error
+	)
+
+	output, err = translate.DeepL.Translate("EN", "RU", input)
+	if err == nil {
+		return output, nil
 	}
-	result, err := yandextr.Translate(currentSID.Load(), text)
+	log.Println(err)
+
+	output, err = translate.Yandex.Translate("EN", "RU", input)
+	if err == nil {
+		return output, nil
+	}
+	log.Println(err)
+
+	output, err = translate.Google.Translate("EN", "RU", input)
 	if err != nil {
+		log.Println(err)
 		return "", err
 	}
-	return strings.Join(result.Text, ""), nil
+
+	return output, nil
 }
