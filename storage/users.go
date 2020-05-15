@@ -105,7 +105,7 @@ func (db *UsersTable) Stats(id int) (stats UserStats, err error) {
 		SELECT *,
 			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=1) correct,
 			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=0) incorrect
-		FROM users
+		FROM users 
 		WHERE id=?`
 
 	return stats, db.Get(&stats, q, id)

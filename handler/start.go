@@ -30,7 +30,7 @@ func (h Handler) onStart(m *tb.Message) error {
 	} else if err != nil {
 		return err
 	} else if user.State != storage.StateDefault {
-		return nil // TODO: Send stop-message info
+		return h.sendStop(m.Sender)
 	}
 
 	_, err = h.b.Send(
@@ -47,7 +47,7 @@ func (h Handler) onCategories(m *tb.Message) error {
 		return err
 	}
 	if state != storage.StateDefault {
-		return nil // TODO: Send stop-message info
+		return h.sendStop(m.Sender)
 	}
 
 	_, err = h.b.Send(
@@ -55,5 +55,10 @@ func (h Handler) onCategories(m *tb.Message) error {
 		h.b.Text("categories"),
 		h.b.InlineMarkup("categories"),
 		tb.ModeHTML)
+	return err
+}
+
+func (h Handler) sendStop(to tb.Recipient) error {
+	_, err := h.b.Send(to, h.b.Text("stop"), tb.ModeHTML)
 	return err
 }

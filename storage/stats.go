@@ -11,6 +11,10 @@ type UserStats struct {
 	Stats
 }
 
-func (s UserStats) Rate() int {
-	return s.Correct * 100 / (s.Incorrect + s.Correct)
+func (s Stats) Rate() int {
+	return s.Correct * 100 / s.Total()
+}
+
+func (s Stats) Total() int {
+	return s.Incorrect + s.Correct
 }
