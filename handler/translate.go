@@ -33,15 +33,14 @@ func translateText(input string) (string, error) {
 	}
 	log.Println(err)
 
-	output, err = translate.Yandex.Translate("EN", "RU", input)
+	output, err = translate.Google.Translate("EN", "RU", input)
 	if err == nil {
 		return output, nil
 	}
 	log.Println(err)
 
-	output, err = translate.Google.Translate("EN", "RU", input)
+	output, err = translate.Yandex.Translate("EN", "RU", input)
 	if err != nil {
-		log.Println(err)
 		return "", err
 	}
 

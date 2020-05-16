@@ -9,7 +9,6 @@ import (
 	"github.com/demget/quizzorobot/opentdb"
 	"github.com/demget/quizzorobot/storage"
 
-	gt "github.com/bas24/googletranslatefree"
 	tb "github.com/demget/telebot"
 )
 
@@ -69,6 +68,10 @@ func (h Handler) onStop(m *tb.Message) error {
 		ChatID:    m.Chat.ID,
 	})
 
+	if err := h.sendCategories(m.Sender); err != nil {
+		return err
+	}
+
 	return h.db.Users.Update(m.Sender.ID, storage.User{
 		State: storage.StateDefault,
 	})
@@ -116,7 +119,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		}
 	}
 
-	question, err := gt.Translate(trivia.Question, "en", "ru")
+	question, err := translateText(trivia.Question)
 	if err != nil {
 		return err
 	}

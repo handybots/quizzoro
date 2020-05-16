@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"go.uber.org/atomic"
@@ -16,42 +17,40 @@ import (
 type YandexService struct {
 	sid *atomic.String
 
-	apiMain      string
-	apiBase      string
+	urlSID       string
+	urlAPI       string
 	apiTranslate string
-
-	params url.Values
 }
 
 func (srv *YandexService) Translate(from, to, text string) (string, error) {
-	params := srv.params
-	params.Set("id", srv.sid.Load())
-	for k, v := range srv.params {
-		params[k] = v
-	}
-
 	form := url.Values{}
 	form.Set("text", text)
 	form.Set("option", "4")
 
-	endp := srv.apiTranslate + params.Encode()
-	body := strings.NewReader(form.Encode())
+	params := url.Values{}
+	params.Set("id", srv.sid.Load())
+	params.Set("lang", from+"-"+to)
+	params.Set("srv", "tr-text")
+	params.Set("reason", "auto")
+	params.Set("format", "text")
 
-	req, err := http.NewRequest(http.MethodPost, endp, body)
+	req, err := http.NewRequest(http.MethodPost,
+		srv.apiTranslate+"?"+params.Encode(),
+		strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", err
 	}
 
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(form.Encode())))
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("translate: response code is %d", resp.StatusCode)
+		return "", fmt.Errorf("translate: yandex: response code is %d", resp.StatusCode)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)
@@ -64,13 +63,11 @@ func (srv *YandexService) Translate(from, to, text string) (string, error) {
 		Message string   `json:"message"`
 		Text    []string `json:"text"`
 	}
-
 	if err := json.Unmarshal(data, &result); err != nil {
 		return "", err
 	}
-
 	if result.Code != 200 {
-		return "", fmt.Errorf("translate: yandex: %s (code=%d)", result.Code, result.Message)
+		return "", fmt.Errorf("translate: yandex: %s (code=%d)", result.Message, result.Code)
 	}
 
 	return strings.Join(result.Text, ""), nil
@@ -82,7 +79,7 @@ var (
 )
 
 func (srv *YandexService) UpdateSID() error {
-	req, err := http.NewRequest(http.MethodGet, srv.apiMain, nil)
+	req, err := http.NewRequest(http.MethodGet, srv.urlSID, nil)
 	if err != nil {
 		return err
 	}
@@ -93,7 +90,7 @@ func (srv *YandexService) UpdateSID() error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("translate: response code is %d", resp.StatusCode)
+		return fmt.Errorf("translate: yandex: response code is %d", resp.StatusCode)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)

@@ -49,9 +49,11 @@ func (h Handler) onCategories(m *tb.Message) error {
 	if state != storage.StateDefault {
 		return h.sendStop(m.Sender)
 	}
+	return h.sendCategories(m.Sender)
+}
 
-	_, err = h.b.Send(
-		m.Sender,
+func (h Handler) sendCategories(to tb.Recipient) error {
+	_, err := h.b.Send(to,
 		h.b.Text("categories"),
 		h.b.InlineMarkup("categories"),
 		tb.ModeHTML)
