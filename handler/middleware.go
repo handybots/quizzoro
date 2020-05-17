@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tb "github.com/demget/telebot"
+	"github.com/sirupsen/logrus"
 )
 
 func (h Handler) Middleware(u *tb.Update) bool {
@@ -16,22 +17,32 @@ func (h Handler) Middleware(u *tb.Update) bool {
 
 	switch {
 	case u.Message != nil:
-		kind = "MM"
+		kind = "message"
 		data = u.Message.Text
 		user = u.Message.Sender
 	case u.Callback != nil:
-		kind = "CC"
+		kind = "callback"
 		data = trimData(u.Callback.Data)
 		user = u.Callback.Sender
 	case u.PollAnswer != nil:
-		kind = "PA"
+		kind = "poll_answer"
 		data = u.PollAnswer.PollID
 		user = &u.PollAnswer.User
 	default:
 		return false
 	}
 
+	f := logrus.Fields{
+		"event": kind,
+	}
+	f["user"] = logrus.Fields{
+		"id":   user.ID,
+		"lang": user.LanguageCode,
+	}
+
+	logrus.WithFields(f).Info(data)
 	log.Println(kind, user.ID, data)
+
 	return true
 }
 

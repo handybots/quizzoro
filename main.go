@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"math/rand"
+	"net"
 	"os"
 	"time"
 
@@ -10,10 +11,20 @@ import (
 	"github.com/demget/quizzorobot/handler"
 	"github.com/demget/quizzorobot/storage"
 
+	"github.com/bshuster-repo/logrus-logstash-hook"
 	tb "github.com/demget/telebot"
+	"github.com/sirupsen/logrus"
 )
 
 func init() {
+	conn, err := net.Dial("tcp", "localhost:5000")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	f := logrustash.DefaultFormatter(logrus.Fields{"app": "quizzorobot"})
+	logrus.AddHook(logrustash.New(conn, f))
+
 	rand.Seed(time.Now().UnixNano())
 }
 

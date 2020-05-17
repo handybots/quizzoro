@@ -7,8 +7,51 @@ services:
     ports:
       - 3306:3306
     volumes:
-      - mysql-volume
+      - mysql:/var/lib/mysql
     environment:
       MYSQL_USER: root
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-    restart: always
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.7.0
+    container_name: quizzoro_elasticsearch
+    volumes:
+      - elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+      discovery.type: single-node
+    networks:
+      - elk
+  logstash:
+    image: docker.elastic.co/logstash/logstash:7.7.0
+    container_name: quizzoro_logstash
+    volumes:
+      - ./configs/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+    ports:
+      - 5000:5000/tcp
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.7.0
+    container_name: quizzoro_kibana
+    ports:
+      - 5601:5601
+    networks:
+      - elk
+    depends_on:
+      - elasticsearch
+
+networks:
+  elk:
+    driver: bridge
+
+volumes:
+  mysql:
+  elasticsearch:
