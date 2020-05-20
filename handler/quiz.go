@@ -2,7 +2,6 @@ package handler
 
 import (
 	"database/sql"
-	"log"
 	"strconv"
 	"strings"
 
@@ -14,7 +13,7 @@ import (
 
 func (h Handler) OnSkip(m *tb.Message) {
 	if err := h.onSkip(m); err != nil {
-		log.Println(err)
+		h.OnError(m, err)
 	}
 }
 
@@ -29,7 +28,7 @@ func (h Handler) onSkip(m *tb.Message) error {
 
 	cache, err := h.db.Users.Cache(m.Sender.ID)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	msg := tb.StoredMessage{
@@ -45,7 +44,7 @@ func (h Handler) onSkip(m *tb.Message) error {
 
 func (h Handler) OnStop(m *tb.Message) {
 	if err := h.onStop(m); err != nil {
-		log.Println(err)
+		h.OnError(m, err)
 	}
 }
 
@@ -78,6 +77,23 @@ func (h Handler) onStop(m *tb.Message) error {
 }
 
 func (h Handler) sendQuiz(user *tb.User, category string) error {
+	avail, err := h.db.Polls.Available(user.ID, category)
+	if err == nil {
+		var correct int
+		shuffleStrings(avail.Answers)
+		for i, a := range avail.Answers {
+			if a == avail.Correct {
+				correct = i
+				break
+			}
+		}
+
+		_, err = h.sendTriviaPoll(avail.Question, avail.Answers, correct)
+		return err
+	} else if err != sql.ErrNoRows {
+		return err
+	}
+
 	trivia, err := opentdb.RandomTrivia(categories[category])
 	if err != nil {
 		return err
@@ -124,22 +140,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
-	poll := &tb.Poll{
-		Type:          tb.PollQuiz,
-		CorrectOption: correct,
-		Question:      question,
-	}
-	poll.AddOptions(answers...)
-
-	// TODO: Replace with tb.ChatID
-	chat := &tb.Chat{ID: h.conf.QuizzesChat}
-	msg, err := h.b.Send(chat, poll)
-	if err != nil {
-		return err
-	}
-
-	_, err = h.b.EditReplyMarkup(msg,
-		h.b.InlineMarkup("moderation", msg.Poll.ID))
+	msg, err := h.sendTriviaPoll(question, answers, correct)
 	if err != nil {
 		return err
 	}
@@ -174,4 +175,26 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		State:     storage.StateQuiz,
 		UserCache: cache,
 	})
+}
+
+func (h Handler) sendTriviaPoll(q string, a []string, i int) (*tb.Message, error) {
+	poll := &tb.Poll{
+		Type:          tb.PollQuiz,
+		CorrectOption: i,
+		Question:      q,
+	}
+	poll.AddOptions(a...)
+
+	// TODO: Replace with tb.ChatID
+	msg, err := h.b.Send(&tb.Chat{ID: h.conf.QuizzesChat}, poll)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup("moderation", msg.Poll.ID))
+	if err != nil {
+		return nil, err
+	}
+
+	return msg, err
 }

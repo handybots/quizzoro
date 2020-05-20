@@ -11,6 +11,7 @@ type PollsStorage interface {
 	Delete(id string) error
 	ByQuestion(category, question string) (Poll, error)
 	CorrectAnswer(id string) (int, error)
+	Available(userID int, category string) (Poll, error)
 }
 
 type PollsTable struct {
@@ -72,7 +73,7 @@ func (db *PollsTable) Delete(id string) error {
 	return err
 }
 
-func (db *PollsTable) ByQuestion(category, question string) (poll Poll, err error) {
+func (db *PollsTable) ByQuestion(category, question string) (poll Poll, _ error) {
 	const q = `SELECT * FROM polls WHERE category=? AND question_eng=?`
 	return poll, db.Get(&poll, q, category, question)
 }
@@ -94,4 +95,12 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 	}
 
 	return correct, nil
+}
+
+func (db *PollsTable) Available(userID int, category string) (poll Poll, _ error) {
+	const q = `
+		SELECT * FROM polls WHERE category = ? AND id
+		NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=?)`
+
+	return poll, db.Get(&poll, q, category, userID)
 }
