@@ -10,7 +10,7 @@ import (
 
 func (h Handler) OnStats(m *tb.Message) {
 	if err := h.onStats(m); err != nil {
-		log.Println(err)
+		h.OnError(m, err)
 	}
 }
 

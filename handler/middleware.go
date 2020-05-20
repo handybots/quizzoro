@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"strings"
 
 	tb "github.com/demget/telebot"
@@ -9,41 +8,63 @@ import (
 )
 
 func (h Handler) Middleware(u *tb.Update) bool {
+	var f logrus.Fields
+
+	switch {
+	case u.Message != nil:
+		f = eventFields(u.Message)
+	case u.Callback != nil:
+		f = eventFields(u.Callback)
+	case u.PollAnswer != nil:
+		f = eventFields(u.PollAnswer)
+	default:
+		return false
+	}
+
+	data := f["data"]
+	delete(f, "data")
+	logrus.WithFields(f).Info(data)
+
+	return true
+}
+
+func (h Handler) OnError(v interface{}, err error) {
+	logrus.WithFields(eventFields(v)).Error(err)
+}
+
+func eventFields(v interface{}) (f logrus.Fields) {
 	var (
 		user *tb.User
 		kind string
 		data string
 	)
 
-	switch {
-	case u.Message != nil:
+	switch vv := v.(type) {
+	case *tb.Message:
 		kind = "message"
-		data = u.Message.Text
-		user = u.Message.Sender
-	case u.Callback != nil:
+		data = vv.Text
+		user = vv.Sender
+	case *tb.Callback:
 		kind = "callback"
-		data = trimData(u.Callback.Data)
-		user = u.Callback.Sender
-	case u.PollAnswer != nil:
+		data = trimData(vv.Data)
+		user = vv.Sender
+	case *tb.PollAnswer:
 		kind = "poll_answer"
-		data = u.PollAnswer.PollID
-		user = &u.PollAnswer.User
+		data = vv.PollID
+		user = &vv.User
 	default:
-		return false
+		return
 	}
 
-	f := logrus.Fields{
+	f = logrus.Fields{
 		"event": kind,
+		"data":  data,
 	}
 	f["user"] = logrus.Fields{
 		"id":   user.ID,
 		"lang": user.LanguageCode,
 	}
-
-	logrus.WithFields(f).Info(data)
-	log.Println(kind, user.ID, data)
-
-	return true
+	return f
 }
 
 func trimData(s string) string {

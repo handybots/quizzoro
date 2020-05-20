@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"log"
-
 	"github.com/demget/quizzorobot/storage"
 
 	tb "github.com/demget/telebot"
@@ -10,7 +8,7 @@ import (
 
 func (h Handler) OnPollAnswer(pa *tb.PollAnswer) {
 	if err := h.onPollAnswer(pa); err != nil {
-		log.Println(err)
+		h.OnError(pa, err)
 	}
 }
 
@@ -42,7 +40,7 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 
 	cache, err := h.db.Users.Cache(pa.User.ID)
 	if err != nil {
-		log.Println(err)
+		return err
 	}
 
 	return h.sendQuiz(&pa.User, cache.Category)

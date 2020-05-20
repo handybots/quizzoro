@@ -51,10 +51,15 @@ inline_buttons:
     unique: category
     callback_data: random
     text: '🎲 Случайная'
+
   bad_quiz:
     unique: bad_quiz
     callback_data: ${.}
     text: 'Удалить'
+  bad_answers:
+    unique: bad_answers
+    callback_data: ${.}
+    text: '🇬🇧'
 
 inline_keyboards:
   categories:
@@ -67,3 +72,4 @@ inline_keyboards:
     - - random
   moderation:
     - - bad_quiz
+      - bad_answers

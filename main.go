@@ -16,19 +16,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func init() {
-	conn, err := net.Dial("tcp", "localhost:5000")
-	if err != nil {
+func main() {
+	rand.Seed(time.Now().UnixNano())
+
+	if err := initLogger(); err != nil {
 		log.Fatal(err)
 	}
 
-	f := logrustash.DefaultFormatter(logrus.Fields{"app": "quizzorobot"})
-	logrus.AddHook(logrustash.New(conn, f))
-
-	rand.Seed(time.Now().UnixNano())
-}
-
-func main() {
 	tmpl := &tb.TemplateText{
 		Dir:        "data",
 		DelimLeft:  "${",
@@ -73,7 +67,21 @@ func main() {
 	b.Handle(b.Button("stats"), h.OnStats)
 	b.Handle(b.InlineButton("category"), h.OnCategory)
 	b.Handle(b.InlineButton("bad_quiz"), h.OnBadQuiz)
+	b.Handle(b.InlineButton("bad_answers"), h.OnBadAnswers)
 
 	b.Poller = tb.NewMiddlewarePoller(b.Poller, h.Middleware)
 	b.Start()
+}
+
+func initLogger() error {
+	conn, err := net.Dial("tcp", "localhost:5000")
+	if err != nil {
+		return err
+	}
+
+	f := logrustash.DefaultFormatter(logrus.Fields{"app": "quizzorobot"})
+	logrus.AddHook(logrustash.New(conn, f))
+
+	logrus.SetOutput(os.Stdout)
+	return nil
 }

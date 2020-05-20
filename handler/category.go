@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"log"
 	"math/rand"
 	"strconv"
 
@@ -21,6 +20,16 @@ var categories = map[string]int{
 	"random":      -1,
 }
 
+var categoryOrder = []string{
+	"general",
+	"art",
+	"vehicles",
+	"celebrities",
+	"films",
+	"music",
+	"random",
+}
+
 var trueFalseAnswers = []string{
 	"Правда", "Ложь",
 }
@@ -28,7 +37,7 @@ var trueFalseAnswers = []string{
 func (h Handler) OnCategory(c *tb.Callback) {
 	defer h.b.Respond(c)
 	if err := h.onCategory(c); err != nil {
-		log.Println(err)
+		h.OnError(c, err)
 	}
 }
 
@@ -47,15 +56,7 @@ func (h Handler) onCategory(c *tb.Callback) error {
 		if err != nil {
 			return err
 		}
-
-		i := 1
-		for k := range categories {
-			if i == msg.Dice.Value {
-				category = k
-				break
-			}
-			i++
-		}
+		category = categoryOrder[msg.Dice.Value-1]
 
 		r := bot.Random{
 			Value:    msg.Dice.Value,

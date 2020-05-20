@@ -3,6 +3,7 @@ package handler
 import (
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/storage"
+	"github.com/sirupsen/logrus"
 
 	tb "github.com/demget/telebot"
 )

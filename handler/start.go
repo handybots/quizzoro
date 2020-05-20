@@ -10,13 +10,13 @@ import (
 
 func (h Handler) OnStart(m *tb.Message) {
 	if err := h.onStart(m); err != nil {
-		log.Println(err)
+		h.OnError(m, err)
 	}
 }
 
 func (h Handler) OnCategories(m *tb.Message) {
 	if err := h.onCategories(m); err != nil {
-		log.Println(err)
+		h.OnError(m, err)
 	}
 }
 
