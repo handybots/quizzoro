@@ -2,6 +2,7 @@ package translate
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -47,10 +48,16 @@ func (srv *DeepLService) Translate(from, to, text string) (string, error) {
 	}
 
 	var result struct {
-		Text string `json:"text"`
+		Translations []struct {
+			Text string `json:"text"`
+		} `json:"translations"`
 	}
 	if err := json.Unmarshal(data, &result); err != nil {
 		return "", err
 	}
-	return result.Text, nil
+	if len(result.Translations) == 0 {
+		return "", errors.New("translate: deepl: no translations")
+	}
+
+	return result.Translations[0].Text, nil
 }
