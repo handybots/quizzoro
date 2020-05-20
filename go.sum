@@ -6,8 +6,6 @@ github.com/bas24/googletranslatefree v0.0.0-20170719053803-07873a6de396 h1:4YSEU
 github.com/bas24/googletranslatefree v0.0.0-20170719053803-07873a6de396/go.mod h1:ntTdGCe6WzFmHjox8vK2FZ2KLyh0IFxw43B6XCg0zf4=
 github.com/bshuster-repo/logrus-logstash-hook v0.0.0-20190911164539-b3d898b5138a h1:8sm9A8pin8aj3hYkQusQQxCJHIBNQsQ0dFKNTZ2MGmM=
 github.com/bshuster-repo/logrus-logstash-hook v0.0.0-20190911164539-b3d898b5138a/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
-github.com/bshuster-repo/logrus-logstash-hook v0.4.1 h1:pgAtgj+A31JBVtEHu2uHuEx0n+2ukqUJnS2vVe5pQNA=
-github.com/bshuster-repo/logrus-logstash-hook v0.4.1/go.mod h1:zsTqEiSzDgAa/8GZR7E1qaXrhYNDKBYy5/dWPTIflbk=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

@@ -4,9 +4,13 @@
 
 Твой результат: <b>${ .User.Rate }%</b>
 
+${ if eq (len .Chats) 0 -}
 🥇 <a href="tg://user?id=${ (index .Chats 0).ID }">${ (index .Chats 0).FirstName }</a>
 <b>${ (index .Top 0).Rate }%</b> правильных ответов
 <b>${ (index .Top 0).Total }</b> пройденных викторин
+${ else -}
+🥇 <i>Здесь можешь быть ты!</i>
+${- end }
 
 ${ if gt (len .Chats) 1 -}
 🥈 <a href="tg://user?id=${ (index .Chats 1).ID }">${ (index .Chats 1).FirstName }</a>

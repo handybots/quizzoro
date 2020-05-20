@@ -12,7 +12,11 @@ type UserStats struct {
 }
 
 func (s Stats) Rate() int {
-	return s.Correct * 100 / s.Total()
+	total := s.Total()
+	if total == 0 {
+		return 0
+	}
+	return s.Correct * 100 / total
 }
 
 func (s Stats) Total() int {
