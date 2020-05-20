@@ -78,6 +78,9 @@ func (h Handler) onStop(m *tb.Message) error {
 
 func (h Handler) sendQuiz(user *tb.User, category string) error {
 	avail, err := h.db.Polls.Available(user.ID, category)
+	if err != sql.ErrNoRows {
+		return err
+	}
 	if err == nil {
 		var correct int
 		shuffleStrings(avail.Answers)
@@ -89,8 +92,6 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		}
 
 		_, err = h.sendTriviaPoll(avail.Question, avail.Answers, correct)
-		return err
-	} else if err != sql.ErrNoRows {
 		return err
 	}
 
@@ -104,6 +105,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 	if err == nil {
+		// TODO: check if user had already passed the quiz
 		_, err := h.forward(user, cached)
 		return err
 	}

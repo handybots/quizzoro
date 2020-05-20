@@ -2,7 +2,6 @@ package handler
 
 import (
 	"database/sql"
-	"log"
 
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
