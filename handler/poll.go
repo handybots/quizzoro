@@ -21,8 +21,13 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 	if err != nil {
 		return err
 	}
-	if state != storage.StateQuiz {
+	if state == storage.StateDefault {
 		return nil
+	}
+
+	cache, err := h.db.Users.Cache(pa.User.ID)
+	if err != nil {
+		return err
 	}
 
 	correct, err := h.db.Polls.CorrectAnswer(pa.PollID)
@@ -35,11 +40,6 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		Correct: pa.Options[0] == correct,
 	}
 	if err := h.db.Users.AddPoll(pa.User.ID, poll); err != nil {
-		return err
-	}
-
-	cache, err := h.db.Users.Cache(pa.User.ID)
-	if err != nil {
 		return err
 	}
 

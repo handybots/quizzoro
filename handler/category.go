@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"math/rand"
 	"strconv"
 
 	"github.com/demget/quizzorobot/bot"
@@ -79,10 +78,15 @@ func (h Handler) onCategory(c *tb.Callback) error {
 		}
 	}
 
+	update := storage.User{State: storage.StateWaiting}
+	if err := h.db.Users.Update(c.Sender.ID, update); err != nil {
+		return err
+	}
+
 	return h.sendQuiz(c.Sender, category)
 }
 
-// TODO: Will be possible to remove this after tucnak/telebot v2.2 release
+// TODO: remove after tucnak/telebot v2.2 release
 func (h Handler) forward(to tb.Recipient, m tb.Editable) (*tb.Message, error) {
 	msg, chatID := m.MessageSig()
 	msgID, _ := strconv.Atoi(msg)
@@ -90,11 +94,5 @@ func (h Handler) forward(to tb.Recipient, m tb.Editable) (*tb.Message, error) {
 	return h.b.Forward(to, &tb.Message{
 		ID:   msgID,
 		Chat: &tb.Chat{ID: chatID},
-	})
-}
-
-func shuffleStrings(s []string) {
-	rand.Shuffle(len(s), func(i, j int) {
-		s[i], s[j] = s[j], s[i]
 	})
 }

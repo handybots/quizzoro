@@ -2,6 +2,7 @@ package handler
 
 import (
 	"database/sql"
+	"math/rand"
 	"strconv"
 	"strings"
 
@@ -22,7 +23,7 @@ func (h Handler) onSkip(m *tb.Message) error {
 	if err != nil {
 		return err
 	}
-	if state != storage.StateQuiz {
+	if state == storage.StateDefault {
 		return nil
 	}
 
@@ -31,13 +32,12 @@ func (h Handler) onSkip(m *tb.Message) error {
 		return err
 	}
 
-	msg := tb.StoredMessage{
+	// TODO: remember skipped poll to avoid duplicates
+
+	_ = h.b.Delete(tb.StoredMessage{
 		MessageID: cache.MessageID,
 		ChatID:    m.Chat.ID,
-	}
-	if err := h.b.Delete(msg); err != nil {
-		return err
-	}
+	})
 
 	return h.sendQuiz(m.Sender, cache.Category)
 }
@@ -53,7 +53,7 @@ func (h Handler) onStop(m *tb.Message) error {
 	if err != nil {
 		return err
 	}
-	if state != storage.StateQuiz {
+	if state == storage.StateDefault {
 		return nil
 	}
 
@@ -78,20 +78,11 @@ func (h Handler) onStop(m *tb.Message) error {
 
 func (h Handler) sendQuiz(user *tb.User, category string) error {
 	avail, err := h.db.Polls.Available(user.ID, category)
-	if err != sql.ErrNoRows {
+	if err == nil {
+		_, err := h.forward(user, avail)
 		return err
 	}
-	if err == nil {
-		var correct int
-		shuffleStrings(avail.Answers)
-		for i, a := range avail.Answers {
-			if a == avail.Correct {
-				correct = i
-				break
-			}
-		}
-
-		_, err = h.sendTriviaPoll(avail.Question, avail.Answers, correct)
+	if err != sql.ErrNoRows {
 		return err
 	}
 
@@ -101,17 +92,21 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	}
 
 	cached, err := h.db.Polls.ByQuestion(category, trivia.Question)
-	if err != sql.ErrNoRows {
-		return err
-	}
 	if err == nil {
 		// TODO: check if user had already passed the quiz
+
 		_, err := h.forward(user, cached)
 		return err
 	}
+	if err != sql.ErrNoRows {
+		return err
+	}
 
-	var correct int
-	var answers []string
+	var (
+		correct    int
+		answers    []string
+		moderation = "moderation_en"
+	)
 
 	if trivia.Type == opentdb.Multiple {
 		answers = []string{trivia.CorrectAnswer}
@@ -131,6 +126,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 			answers[i] = strings.Title(tr)
 		}
 	} else {
+		moderation = "moderation"
 		answers = trueFalseAnswers
 		if trivia.CorrectAnswer == "False" {
 			correct = 1
@@ -142,7 +138,12 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
-	msg, err := h.sendTriviaPoll(question, answers, correct)
+	msg, err := h.sendPoll(question, answers, correct)
+	if err != nil {
+		return err
+	}
+
+	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup(moderation, msg.Poll.ID))
 	if err != nil {
 		return err
 	}
@@ -179,7 +180,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	})
 }
 
-func (h Handler) sendTriviaPoll(q string, a []string, i int) (*tb.Message, error) {
+func (h Handler) sendPoll(q string, a []string, i int) (*tb.Message, error) {
 	poll := &tb.Poll{
 		Type:          tb.PollQuiz,
 		CorrectOption: i,
@@ -187,16 +188,27 @@ func (h Handler) sendTriviaPoll(q string, a []string, i int) (*tb.Message, error
 	}
 	poll.AddOptions(a...)
 
-	// TODO: Replace with tb.ChatID
 	msg, err := h.b.Send(&tb.Chat{ID: h.conf.QuizzesChat}, poll)
 	if err != nil {
 		return nil, err
 	}
 
-	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup("moderation", msg.Poll.ID))
-	if err != nil {
-		return nil, err
-	}
-
 	return msg, err
+}
+
+func shuffleStrings(s []string) {
+	rand.Shuffle(len(s), func(i, j int) {
+		s[i], s[j] = s[j], s[i]
+	})
+}
+
+func shuffleWithCorrect(s []string, correct string) (ind int) {
+	shuffleStrings(s)
+	for i, a := range s {
+		if a == correct {
+			ind = i
+			break
+		}
+	}
+	return
 }

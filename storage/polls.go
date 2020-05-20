@@ -7,6 +7,7 @@ import (
 )
 
 type PollsStorage interface {
+	ByID(id string) (Poll, error)
 	Create(poll Poll) error
 	Delete(id string) error
 	ByQuestion(category, question string) (Poll, error)
@@ -19,7 +20,7 @@ type PollsTable struct {
 }
 
 type Poll struct {
-	Model       `structs:",omitempty"`
+	Model       `structs:"-"`
 	ID          string  `db:"id" structs:"id,omitempty"`
 	MessageID   string  `db:"message_id" structs:"message_id,omitempty"`
 	ChatID      int64   `db:"chat_id" structs:"chat_id,omitempty"`
@@ -38,7 +39,7 @@ func (q Poll) MessageSig() (string, int64) {
 }
 
 type PassedPoll struct {
-	Model   `structs:",omitempty"`
+	Model   `structs:"-"`
 	ID      string
 	Correct bool
 }
@@ -52,6 +53,11 @@ func (polls PassedPolls) Contains(pollID string) bool {
 		}
 	}
 	return false
+}
+
+func (db *PollsTable) ByID(id string) (poll Poll, _ error) {
+	const q = `SELECT * FROM polls WHERE id=?`
+	return poll, db.Get(&poll, q, id)
 }
 
 func (db *PollsTable) Create(poll Poll) error {
@@ -99,8 +105,9 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 
 func (db *PollsTable) Available(userID int, category string) (poll Poll, _ error) {
 	const q = `
-		SELECT * FROM polls WHERE category = ? AND id
-		NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=?)`
+		SELECT * FROM polls WHERE category=?
+		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=?)
+		ORDER BY RAND() LIMIT 1`
 
 	return poll, db.Get(&poll, q, category, userID)
 }

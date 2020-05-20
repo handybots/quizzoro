@@ -70,6 +70,8 @@ inline_keyboards:
     - - films
       - music
     - - random
-  moderation:
+  moderation_en:
     - - bad_quiz
       - bad_answers
+  moderation:
+    - - bad_quiz

@@ -10,6 +10,7 @@ type State = string
 
 const (
 	StateDefault State = "default"
+	StateWaiting State = "waiting"
 	StateQuiz    State = "quiz"
 )
 
@@ -30,7 +31,7 @@ type UsersTable struct {
 }
 
 type User struct {
-	Model     `structs:",omitempty"`
+	Model     `structs:"-"`
 	UserCache `structs:",flatten,omitempty"`
 
 	ID    int    `db:"id" structs:"id,omitempty"`
