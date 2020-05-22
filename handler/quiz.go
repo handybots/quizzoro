@@ -79,7 +79,7 @@ func (h Handler) onStop(m *tb.Message) error {
 func (h Handler) sendQuiz(user *tb.User, category string) error {
 	avail, err := h.db.Polls.Available(user.ID, category)
 	if err == nil {
-		_, err := h.forward(user, avail)
+		_, err := h.b.Forward(user, avail)
 		return err
 	}
 	if err != sql.ErrNoRows {
@@ -94,8 +94,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	cached, err := h.db.Polls.ByQuestion(category, trivia.Question)
 	if err == nil {
 		// TODO: check if user had already passed the quiz
-
-		_, err := h.forward(user, cached)
+		_, err := h.b.Forward(user, cached)
 		return err
 	}
 	if err != sql.ErrNoRows {
@@ -151,7 +150,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	quiz := storage.Poll{
 		ID:          msg.Poll.ID,
 		MessageID:   strconv.Itoa(msg.ID),
-		ChatID:      h.conf.QuizzesChat,
+		ChatID:      int64(h.conf.QuizzesChat),
 		Category:    category,
 		Difficulty:  trivia.Difficulty,
 		Question:    question,
@@ -188,7 +187,7 @@ func (h Handler) sendPoll(q string, a []string, i int) (*tb.Message, error) {
 	}
 	poll.AddOptions(a...)
 
-	msg, err := h.b.Send(&tb.Chat{ID: h.conf.QuizzesChat}, poll)
+	msg, err := h.b.Send(h.conf.QuizzesChat, poll)
 	if err != nil {
 		return nil, err
 	}

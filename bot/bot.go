@@ -6,9 +6,7 @@ import (
 )
 
 type Config struct {
-	// TODO: replace with tb.ChatID
-	//  (tucnak/telebot@v2.2)
-	QuizzesChat int64 `json:"quizzes_chat"`
+	QuizzesChat tb.ChatID `json:"quizzes_chat"`
 }
 
 type Random struct {

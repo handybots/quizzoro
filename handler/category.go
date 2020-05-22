@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"strconv"
-
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/storage"
 
@@ -84,15 +82,4 @@ func (h Handler) onCategory(c *tb.Callback) error {
 	}
 
 	return h.sendQuiz(c.Sender, category)
-}
-
-// TODO: remove after tucnak/telebot v2.2 release
-func (h Handler) forward(to tb.Recipient, m tb.Editable) (*tb.Message, error) {
-	msg, chatID := m.MessageSig()
-	msgID, _ := strconv.Atoi(msg)
-
-	return h.b.Forward(to, &tb.Message{
-		ID:   msgID,
-		Chat: &tb.Chat{ID: chatID},
-	})
 }

@@ -6,7 +6,7 @@ require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/bas24/googletranslatefree v0.0.0-20170719053803-07873a6de396
 	github.com/bshuster-repo/logrus-logstash-hook v0.0.0-20190911164539-b3d898b5138a
-	github.com/demget/telebot v0.0.0-20200427103000-7398c1372ca2
+	github.com/demget/telebot v0.0.0-20200522171359-b9002caa4c72
 	github.com/fatih/structs v1.1.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/jmoiron/sqlx v1.2.0
