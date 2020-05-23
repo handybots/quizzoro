@@ -36,12 +36,12 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 	}
 
 	poll := storage.PassedPoll{
-		ID:      pa.PollID,
+		PollID:  pa.PollID,
 		Correct: pa.Options[0] == correct,
 	}
 	if err := h.db.Users.AddPoll(pa.User.ID, poll); err != nil {
 		return err
 	}
 
-	return h.sendQuiz(&pa.User, cache.Category)
+	return h.sendQuiz(&pa.User, cache.LastCategory)
 }

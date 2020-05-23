@@ -5,7 +5,7 @@ create table users (
     updated_at      timestamp       not null default now() on update now()      ,
     id              integer(10)     not null primary key                        ,
     state           varchar(32)     not null default 'default'                  ,
-    last_msg_id     integer(10)     not null default 0                          ,
+    last_message_id integer(10)     not null default 0                          ,
     last_category   varchar(16)     not null default ''
 );
 

@@ -20,18 +20,18 @@ type PollsTable struct {
 }
 
 type Poll struct {
-	Model       `structs:"-"`
-	ID          string  `db:"id" structs:"id,omitempty"`
-	MessageID   string  `db:"message_id" structs:"message_id,omitempty"`
-	ChatID      int64   `db:"chat_id" structs:"chat_id,omitempty"`
-	Category    string  `db:"category" structs:"category,omitempty"`
-	Difficulty  string  `db:"difficulty" structs:"difficulty,omitempty"`
-	Question    string  `db:"question" structs:"question,omitempty"`
-	QuestionEng string  `db:"question_eng" structs:"question_eng,omitempty"`
-	Correct     string  `db:"correct" structs:"correct,omitempty"`
-	CorrectEng  string  `db:"correct_eng" structs:"correct_eng,omitempty"`
-	Answers     Strings `db:"answers" structs:"answers,omitempty"`
-	AnswersEng  Strings `db:"answers_eng" structs:"answers_eng,omitempty"`
+	Model       `sq:"-"`
+	ID          string  `sq:"id,omitempty"`
+	MessageID   string  `sq:"message_id,omitempty"`
+	ChatID      int64   `sq:"chat_id,omitempty"`
+	Category    string  `sq:"category,omitempty"`
+	Difficulty  string  `sq:"difficulty,omitempty"`
+	Question    string  `sq:"question,omitempty"`
+	QuestionEng string  `sq:"question_eng,omitempty"`
+	Correct     string  `sq:"correct,omitempty"`
+	CorrectEng  string  `sq:"correct_eng,omitempty"`
+	Answers     Strings `sq:"answers,omitempty"`
+	AnswersEng  Strings `sq:"answers_eng,omitempty"`
 }
 
 func (q Poll) MessageSig() (string, int64) {
@@ -39,16 +39,17 @@ func (q Poll) MessageSig() (string, int64) {
 }
 
 type PassedPoll struct {
-	Model   `structs:"-"`
-	ID      string
-	Correct bool
+	Model   `sq:"-"`
+	UserID  int    `sq:"user_id,omitempty"`
+	PollID  string `sq:"poll_id,omitempty"`
+	Correct bool   `sq:"correct,omitempty"`
 }
 
 type PassedPolls []PassedPoll
 
 func (polls PassedPolls) Contains(pollID string) bool {
 	for _, p := range polls {
-		if p.ID == pollID {
+		if p.PollID == pollID {
 			return true
 		}
 	}
@@ -105,9 +106,21 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 
 func (db *PollsTable) Available(userID int, category string) (poll Poll, _ error) {
 	const q = `
-		SELECT * FROM polls WHERE category=?
-		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=?)
+		SELECT * FROM polls WHERE category=:category
+		AND id != (SELECT last_poll_id FROM users WHERE id=:user_id)
+		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=:user_id)
 		ORDER BY RAND() LIMIT 1`
 
-	return poll, db.Get(&poll, q, category, userID)
+	stmt, err := db.PrepareNamed(q)
+	if err != nil {
+		return poll, err
+	}
+
+	return poll, stmt.Get(&poll, struct {
+		Category string
+		UserID   int
+	}{
+		Category: category,
+		UserID:   userID,
+	})
 }

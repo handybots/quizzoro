@@ -21,7 +21,6 @@ type UsersStorage interface {
 	State(id int) (string, error)
 	Cache(id int) (UserCache, error)
 	AddPoll(id int, poll PassedPoll) error
-	PassedPolls(id int) (PassedPolls, error)
 	TopStats() ([]UserStats, error)
 	Stats(id int) (UserStats, error)
 }
@@ -31,16 +30,17 @@ type UsersTable struct {
 }
 
 type User struct {
-	Model     `structs:"-"`
-	UserCache `structs:",flatten,omitempty"`
+	Model     `sq:"-"`
+	UserCache `sq:",flatten,omitempty"`
 
-	ID    int    `db:"id" structs:"id,omitempty"`
-	State string `db:"state" structs:"state,omitempty"`
+	ID    int    `sq:"id,omitempty"`
+	State string `sq:"state,omitempty"`
 }
 
 type UserCache struct {
-	MessageID string `db:"last_msg_id" structs:"last_msg_id,omitempty"`
-	Category  string `db:"last_category" structs:"last_category,omitempty"`
+	LastPollID    string `sq:"last_poll_id,omitempty"`
+	LastMessageID string `sq:"last_message_id,omitempty"`
+	LastCategory  string `sq:"last_category,omitempty"`
 }
 
 func (db *UsersTable) Create(id int) error {
@@ -74,26 +74,34 @@ func (db *UsersTable) State(id int) (state string, err error) {
 }
 
 func (db *UsersTable) Cache(id int) (cache UserCache, err error) {
-	const q = `SELECT last_msg_id, last_category FROM users WHERE id=?`
+	const q = `
+		SELECT
+		   last_poll_id,
+		   last_message_id,
+		   last_category
+		FROM users
+		WHERE id=?`
+
 	return cache, db.Get(&cache, q, id)
 }
 
 func (db *UsersTable) AddPoll(id int, poll PassedPoll) error {
 	const q = `INSERT INTO passed_polls (user_id, poll_id, correct) VALUES (?, ?, ?)`
-	_, err := db.Exec(q, id, poll.ID, poll.Correct)
+	_, err := db.Exec(q, id, poll.PollID, poll.Correct)
 	return err
-}
-
-func (db *UsersTable) PassedPolls(id int) (polls PassedPolls, err error) {
-	const q = `SELECT poll_id FROM passed_polls WHERE user_id=?`
-	return polls, db.Get(&polls, q, id)
 }
 
 func (db *UsersTable) TopStats() (stats []UserStats, err error) {
 	const q = `
 		SELECT *,
-			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=1) correct,
-			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=0) incorrect
+		    (
+				SELECT COUNT(*) FROM passed_polls
+				WHERE user_id=users.id AND correct=1
+			) correct,
+		    (
+				SELECT COUNT(*) FROM passed_polls
+				WHERE user_id=users.id AND correct=0
+			) incorrect
 		FROM users
 		ORDER BY correct
 		LIMIT 3`
@@ -104,9 +112,15 @@ func (db *UsersTable) TopStats() (stats []UserStats, err error) {
 func (db *UsersTable) Stats(id int) (stats UserStats, err error) {
 	const q = `
 		SELECT *,
-			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=1) correct,
-			(SELECT COUNT(*) FROM passed_polls WHERE user_id=users.id AND correct=0) incorrect
-		FROM users 
+		    (
+				SELECT COUNT(*) FROM passed_polls
+				WHERE user_id=users.id AND correct=1
+			) correct,
+		    (
+				SELECT COUNT(*) FROM passed_polls
+				WHERE user_id=users.id AND correct=0
+			) incorrect
+		FROM users
 		WHERE id=?`
 
 	return stats, db.Get(&stats, q, id)

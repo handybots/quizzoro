@@ -32,14 +32,12 @@ func (h Handler) onSkip(m *tb.Message) error {
 		return err
 	}
 
-	// TODO: remember skipped poll to avoid duplicates
-
 	_ = h.b.Delete(tb.StoredMessage{
-		MessageID: cache.MessageID,
+		MessageID: cache.LastMessageID,
 		ChatID:    m.Chat.ID,
 	})
 
-	return h.sendQuiz(m.Sender, cache.Category)
+	return h.sendQuiz(m.Sender, cache.LastCategory)
 }
 
 func (h Handler) OnStop(m *tb.Message) {
@@ -63,7 +61,7 @@ func (h Handler) onStop(m *tb.Message) error {
 	}
 
 	_ = h.b.Delete(tb.StoredMessage{
-		MessageID: cache.MessageID,
+		MessageID: cache.LastMessageID,
 		ChatID:    m.Chat.ID,
 	})
 
@@ -79,23 +77,34 @@ func (h Handler) onStop(m *tb.Message) error {
 func (h Handler) sendQuiz(user *tb.User, category string) error {
 	avail, err := h.db.Polls.Available(user.ID, category)
 	if err == nil {
-		_, err := h.b.Forward(user, avail)
-		return err
+		msg, err := h.b.Forward(user, avail)
+		if err != nil {
+			return err
+		}
+
+		cache := storage.UserCache{
+			LastPollID:    avail.ID,
+			LastMessageID: strconv.Itoa(msg.ID),
+			LastCategory:  category,
+		}
+		return h.db.Users.Update(user.ID, storage.User{
+			State:     storage.StateQuiz,
+			UserCache: cache,
+		})
 	}
 	if err != sql.ErrNoRows {
 		return err
 	}
 
+TRIVIA:
 	trivia, err := opentdb.RandomTrivia(categories[category])
 	if err != nil {
 		return err
 	}
 
-	cached, err := h.db.Polls.ByQuestion(category, trivia.Question)
+	_, err = h.db.Polls.ByQuestion(category, trivia.Question)
 	if err == nil {
-		// TODO: check if user had already passed the quiz
-		_, err := h.b.Forward(user, cached)
-		return err
+		goto TRIVIA
 	}
 	if err != sql.ErrNoRows {
 		return err
@@ -142,13 +151,14 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		return err
 	}
 
-	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup(moderation, msg.Poll.ID))
+	pollID := msg.Poll.ID
+	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup(moderation, pollID))
 	if err != nil {
 		return err
 	}
 
 	quiz := storage.Poll{
-		ID:          msg.Poll.ID,
+		ID:          pollID,
 		MessageID:   strconv.Itoa(msg.ID),
 		ChatID:      int64(h.conf.QuizzesChat),
 		Category:    category,
@@ -170,8 +180,9 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	}
 
 	cache := storage.UserCache{
-		MessageID: strconv.Itoa(msg.ID),
-		Category:  category,
+		LastPollID:    pollID,
+		LastMessageID: strconv.Itoa(msg.ID),
+		LastCategory:  category,
 	}
 	return h.db.Users.Update(user.ID, storage.User{
 		State:     storage.StateQuiz,
