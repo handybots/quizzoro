@@ -2,7 +2,6 @@ package handler
 
 import (
 	"github.com/demget/quizzorobot/storage"
-
 	tb "github.com/demget/telebot"
 )
 
@@ -30,13 +29,13 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return err
 	}
 
-	correct, err := h.db.Polls.CorrectAnswer(pa.PollID)
+	correct, err := h.db.Polls.CorrectAnswer(cache.LastPollID)
 	if err != nil {
 		return err
 	}
 
 	poll := storage.PassedPoll{
-		PollID:  pa.PollID,
+		PollID:  cache.LastPollID,
 		Correct: pa.Options[0] == correct,
 	}
 	if err := h.db.Users.AddPoll(pa.User.ID, poll); err != nil {

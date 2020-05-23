@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"log"
 	"strings"
 
 	tb "github.com/demget/telebot"
+	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,6 +32,7 @@ func (h Handler) Middleware(u *tb.Update) bool {
 
 func (h Handler) OnError(v interface{}, err error) {
 	logrus.WithFields(eventFields(v)).Error(err)
+	log.Printf("%+v\n", errors.WithStack(err))
 }
 
 func eventFields(v interface{}) (f logrus.Fields) {
@@ -58,7 +61,9 @@ func eventFields(v interface{}) (f logrus.Fields) {
 
 	f = logrus.Fields{
 		"event": kind,
-		"data":  data,
+	}
+	if data != "" {
+		f["data"] = data
 	}
 	f["user"] = logrus.Fields{
 		"id":   user.ID,

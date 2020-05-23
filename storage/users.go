@@ -19,6 +19,8 @@ type UsersStorage interface {
 	Update(id int, user User) error
 	ByID(id int) (User, error)
 	State(id int) (string, error)
+	Privacy(id int) (bool, error)
+	InvertPrivacy(id int) (bool, error)
 	Cache(id int) (UserCache, error)
 	AddPoll(id int, poll PassedPoll) error
 	TopStats() ([]UserStats, error)
@@ -33,8 +35,9 @@ type User struct {
 	Model     `sq:"-"`
 	UserCache `sq:",flatten,omitempty"`
 
-	ID    int    `sq:"id,omitempty"`
-	State string `sq:"state,omitempty"`
+	ID      int    `sq:"id,omitempty"`
+	State   string `sq:"state,omitempty"`
+	Privacy bool   `sq:"privacy,omitempty"`
 }
 
 type UserCache struct {
@@ -71,6 +74,32 @@ func (db *UsersTable) Update(id int, user User) error {
 func (db *UsersTable) State(id int) (state string, err error) {
 	const q = `SELECT state FROM users WHERE id=?`
 	return state, db.Get(&state, q, id)
+}
+
+func (db *UsersTable) InvertPrivacy(id int) (privacy bool, _ error) {
+	tx, err := db.Beginx()
+	if err != nil {
+		return false, err
+	}
+
+	_, err = tx.Exec(`UPDATE users SET privacy = NOT privacy WHERE id=?`, id)
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	err = tx.Get(&privacy, `SELECT privacy FROM users WHERE id=?`, id)
+	if err != nil {
+		tx.Rollback()
+		return false, err
+	}
+
+	return privacy, tx.Commit()
+}
+
+func (db *UsersTable) Privacy(id int) (privacy bool, _ error) {
+	const q = `SELECT privacy FROM users WHERE id=?`
+	return privacy, db.Get(&privacy, q, id)
 }
 
 func (db *UsersTable) Cache(id int) (cache UserCache, err error) {

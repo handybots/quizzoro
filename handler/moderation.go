@@ -34,7 +34,7 @@ func (h Handler) onBadAnswers(c *tb.Callback) error {
 	answers := cached.AnswersEng
 	correct := shuffleWithCorrect(answers, cached.CorrectEng)
 
-	msg, err := h.sendPoll(cached.Question, answers, correct)
+	msg, err := h.sendPoll(h.conf.QuizzesChat, cached.Question, answers, correct)
 	if err != nil {
 		return err
 	}

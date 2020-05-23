@@ -4,6 +4,7 @@ vars:
   quizzes_chat: -418035651
 
 strings:
+  privacy: 'Настройки изменены!'
   general: '🌍 Общее'
   art: '🎨 Искусство'
   vehicles: '🚘 Транспорт'
@@ -21,6 +22,15 @@ keyboards:
     - - stats
 
 inline_buttons:
+  privacy:
+    unique: privacy
+    text: |
+      ${- if . -}
+      Отключить анонимность
+      ${- else -}
+      Остаться анонимным
+      ${- end -}
+
   category:
     unique: category
   general:
@@ -62,6 +72,8 @@ inline_buttons:
     text: '🇬🇧'
 
 inline_keyboards:
+  privacy:
+    - - privacy
   categories:
     - - general
       - art

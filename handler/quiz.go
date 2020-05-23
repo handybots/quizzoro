@@ -18,6 +18,12 @@ func (h Handler) OnSkip(m *tb.Message) {
 	}
 }
 
+func (h Handler) OnStop(m *tb.Message) {
+	if err := h.onStop(m); err != nil {
+		h.OnError(m, err)
+	}
+}
+
 func (h Handler) onSkip(m *tb.Message) error {
 	state, err := h.db.Users.State(m.Sender.ID)
 	if err != nil {
@@ -38,12 +44,6 @@ func (h Handler) onSkip(m *tb.Message) error {
 	})
 
 	return h.sendQuiz(m.Sender, cache.LastCategory)
-}
-
-func (h Handler) OnStop(m *tb.Message) {
-	if err := h.onStop(m); err != nil {
-		h.OnError(m, err)
-	}
 }
 
 func (h Handler) onStop(m *tb.Message) error {
@@ -75,9 +75,23 @@ func (h Handler) onStop(m *tb.Message) error {
 }
 
 func (h Handler) sendQuiz(user *tb.User, category string) error {
+	privacy, err := h.db.Users.Privacy(user.ID)
+	if err != nil {
+		return err
+	}
+
 	avail, err := h.db.Polls.Available(user.ID, category)
 	if err == nil {
-		msg, err := h.b.Forward(user, avail)
+		var (
+			msg *tb.Message
+		)
+		if privacy {
+			answers := avail.Answers
+			correct := shuffleWithCorrect(answers, avail.Correct)
+			msg, err = h.sendPoll(user, avail.Question, answers, correct)
+		} else {
+			msg, err = h.b.Forward(user, avail)
+		}
 		if err != nil {
 			return err
 		}
@@ -146,7 +160,7 @@ TRIVIA:
 		return err
 	}
 
-	msg, err := h.sendPoll(question, answers, correct)
+	msg, err := h.sendPoll(h.conf.QuizzesChat, question, answers, correct)
 	if err != nil {
 		return err
 	}
@@ -157,7 +171,7 @@ TRIVIA:
 		return err
 	}
 
-	quiz := storage.Poll{
+	poll := storage.Poll{
 		ID:          pollID,
 		MessageID:   strconv.Itoa(msg.ID),
 		ChatID:      int64(h.conf.QuizzesChat),
@@ -170,11 +184,15 @@ TRIVIA:
 		CorrectEng:  trivia.CorrectAnswer,
 		AnswersEng:  append(trivia.IncorrectAnswers, trivia.CorrectAnswer),
 	}
-	if err := h.db.Polls.Create(quiz); err != nil {
+	if err := h.db.Polls.Create(poll); err != nil {
 		return err
 	}
 
-	msg, err = h.b.Forward(user, msg)
+	if privacy {
+		msg, err = h.sendPoll(user, question, answers, correct)
+	} else {
+		msg, err = h.b.Forward(user, msg)
+	}
 	if err != nil {
 		return err
 	}
@@ -190,20 +208,17 @@ TRIVIA:
 	})
 }
 
-func (h Handler) sendPoll(q string, a []string, i int) (*tb.Message, error) {
+func (h Handler) sendPoll(to tb.Recipient,
+	q string, a []string, i int) (*tb.Message, error) {
+
 	poll := &tb.Poll{
 		Type:          tb.PollQuiz,
 		CorrectOption: i,
 		Question:      q,
 	}
+
 	poll.AddOptions(a...)
-
-	msg, err := h.b.Send(h.conf.QuizzesChat, poll)
-	if err != nil {
-		return nil, err
-	}
-
-	return msg, err
+	return h.b.Send(to, poll)
 }
 
 func shuffleStrings(s []string) {
