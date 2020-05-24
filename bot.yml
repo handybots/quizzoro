@@ -6,11 +6,11 @@ vars:
 strings:
   privacy: 'Настройки изменены!'
   general: '🌍 Общее'
-  art: '🎨 Искусство'
-  vehicles: '🚘 Транспорт'
-  celebrities: '🌟 Знаменитости'
-  films: '🎥 Фильмы'
+  history: '📜 История'
   music: '🎹 Музыка'
+  books: '📚 Книги'
+  games: '🕹 Игры'
+  computers: '📟 Компьютеры'
 
 buttons:
   start: '📊 Старт!'
@@ -37,26 +37,26 @@ inline_buttons:
     unique: category
     callback_data: general
     text: '🌍 Общее'
-  art:
+  history:
     unique: category
-    callback_data: art
-    text: '🎨 Искусство'
-  vehicles:
-    unique: category
-    callback_data: vehicles
-    text: '🚘 Транспорт'
-  celebrities:
-    unique: category
-    callback_data: celebrities
-    text: '🌟 Знаменитости'
-  films:
-    unique: category
-    callback_data: films
-    text: '🎥 Фильмы'
+    callback_data: history
+    text: '📜 История'
   music:
     unique: category
     callback_data: music
     text: '🎹 Музыка'
+  books:
+    unique: category
+    callback_data: books
+    text: '📚 Книги'
+  games:
+    unique: category
+    callback_data: games
+    text: '🕹 Игры'
+  computers:
+    unique: category
+    callback_data: computers
+    text: '📟 Компьютеры'
   random:
     unique: category
     callback_data: random
@@ -76,11 +76,11 @@ inline_keyboards:
     - - privacy
   categories:
     - - general
-      - art
-    - - vehicles
-      - celebrities
-    - - films
-      - music
+      - history
+    - - music
+      - books
+    - - games
+      - computers
     - - random
   moderation_en:
     - - bad_quiz

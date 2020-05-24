@@ -1,20 +1,21 @@
 package handler
 
 import (
+	"math/rand"
+
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/storage"
-
 	tb "github.com/demget/telebot"
 )
 
-var categories = map[string]int{
-	"general":     9,
-	"art":         25,
-	"vehicles":    28,
-	"celebrities": 26,
-	"films":       11,
-	"music":       12,
-	"random":      -1,
+var categories = map[string][]int{
+	"general":   {9},
+	"history":   {23},
+	"music":     {12},
+	"books":     {10},
+	"games":     {15, 16},
+	"computers": {18, 30},
+	"random":    {-1},
 }
 
 var categoryOrder = []string{
@@ -82,4 +83,9 @@ func (h Handler) onCategory(c *tb.Callback) error {
 	}
 
 	return h.sendQuiz(c.Sender, category)
+}
+
+func randCategory(s string) int {
+	category := categories[s]
+	return category[rand.Intn(len(category))]
 }

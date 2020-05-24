@@ -9,6 +9,7 @@ import (
 
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/handler"
+	"github.com/demget/quizzorobot/opentdb"
 	"github.com/demget/quizzorobot/storage"
 
 	"github.com/bshuster-repo/logrus-logstash-hook"
@@ -53,10 +54,16 @@ func main() {
 		log.Fatal(err)
 	}
 
+	tdb, err := opentdb.New()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	h := handler.New(handler.Config{
 		Conf: conf,
 		Bot:  b,
 		DB:   db,
+		TDB:  tdb,
 	})
 
 	b.Handle("/start", h.OnStart)

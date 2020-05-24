@@ -13,6 +13,10 @@ const (
 	TrueFalse = "boolean"
 )
 
+type Session struct {
+	token string
+}
+
 type Trivia struct {
 	Category         string   `json:"category"`
 	Type             string   `json:"type"`
@@ -22,11 +26,42 @@ type Trivia struct {
 	IncorrectAnswers []string `json:"incorrect_answers"`
 }
 
-func RandomTrivia(cat int) (*Trivia, error) {
-	url := "https://opentdb.com/api.php?amount=%d&category=%d"
-	const amount = 1
+func New() (*Session, error) {
+	const url = "https://opentdb.com/api_token.php?command=request"
 
-	resp, err := http.DefaultClient.Get(fmt.Sprintf(url, amount, cat))
+	resp, err := http.DefaultClient.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Code    int    `json:"response_code"`
+		Message string `json:"response_message"`
+		Token   string `json:"token"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+	if result.Code != 0 {
+		return nil, fmt.Errorf("opentdb: %s (%d)", result.Message, result.Code)
+	}
+
+	return &Session{token: result.Token}, nil
+}
+
+func (s Session) Trivia(category int) (*Trivia, error) {
+	const (
+		url    = "https://opentdb.com/api.php?amount=%d&category=%d&token=%s"
+		amount = 1
+	)
+
+	resp, err := http.DefaultClient.Get(fmt.Sprintf(url, amount, category, s.token))
 	if err != nil {
 		return nil, err
 	}

@@ -111,7 +111,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 	}
 
 TRIVIA:
-	trivia, err := opentdb.RandomTrivia(categories[category])
+	trivia, err := h.tdb.Trivia(randCategory(category))
 	if err != nil {
 		return err
 	}
