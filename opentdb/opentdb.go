@@ -6,6 +6,7 @@ import (
 	"html"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 const (
@@ -26,6 +27,31 @@ type Trivia struct {
 	IncorrectAnswers []string `json:"incorrect_answers"`
 }
 
+// Load loads session from disk, if it exists, or else creates a new one.
+// Use Load() instead of New() to automatically save created session.
+func Load() (*Session, error) {
+	const path = "opentdb.session"
+
+	file, err := os.Open(path)
+	if os.IsNotExist(err) {
+		session, err := New()
+		if err != nil {
+			return nil, err
+		}
+
+		err = ioutil.WriteFile(path, []byte(session.token), os.ModePerm)
+		return session, err
+	}
+
+	data, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Session{token: string(data)}, nil
+}
+
+// New requests a new session.
 func New() (*Session, error) {
 	const url = "https://opentdb.com/api_token.php?command=request"
 

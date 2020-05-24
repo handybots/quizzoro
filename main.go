@@ -54,7 +54,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	tdb, err := opentdb.New()
+	tdb, err := opentdb.Load()
 	if err != nil {
 		log.Fatal(err)
 	}
