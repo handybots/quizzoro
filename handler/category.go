@@ -20,11 +20,11 @@ var categories = map[string][]int{
 
 var categoryOrder = []string{
 	"general",
-	"art",
-	"vehicles",
-	"celebrities",
-	"films",
+	"history",
 	"music",
+	"books",
+	"games",
+	"computers",
 	"random",
 }
 
