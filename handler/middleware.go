@@ -38,6 +38,7 @@ func (h Handler) OnError(v interface{}, err error) {
 func eventFields(v interface{}) (f logrus.Fields) {
 	var (
 		user *tb.User
+		chat *tb.Chat
 		kind string
 		data string
 	)
@@ -47,10 +48,12 @@ func eventFields(v interface{}) (f logrus.Fields) {
 		kind = "message"
 		data = vv.Text
 		user = vv.Sender
+		chat = vv.Chat
 	case *tb.Callback:
 		kind = "callback"
 		data = trimData(vv.Data)
 		user = vv.Sender
+		chat = vv.Message.Chat
 	case *tb.PollAnswer:
 		kind = "poll_answer"
 		data = vv.PollID
@@ -62,12 +65,18 @@ func eventFields(v interface{}) (f logrus.Fields) {
 	f = logrus.Fields{
 		"event": kind,
 	}
-	if data != "" {
-		f["data"] = data
-	}
 	f["user"] = logrus.Fields{
 		"id":   user.ID,
 		"lang": user.LanguageCode,
+	}
+
+	if data != "" {
+		f["data"] = data
+	}
+	if chat != nil {
+		f["chat"] = logrus.Fields{
+			"id": chat.ID,
+		}
 	}
 	return f
 }

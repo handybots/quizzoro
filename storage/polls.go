@@ -12,7 +12,7 @@ type PollsStorage interface {
 	Delete(id string) error
 	ByQuestion(category, question string) (Poll, error)
 	CorrectAnswer(id string) (int, error)
-	Available(userID int, category string) (Poll, error)
+	Available(userID int64, category string) (Poll, error)
 }
 
 type PollsTable struct {
@@ -104,7 +104,7 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 	return correct, nil
 }
 
-func (db *PollsTable) Available(userID int, category string) (poll Poll, _ error) {
+func (db *PollsTable) Available(userID int64, category string) (poll Poll, _ error) {
 	const q = `
 		SELECT * FROM polls WHERE category=:category
 		AND id != (SELECT last_poll_id FROM users WHERE id=:user_id)
@@ -118,7 +118,7 @@ func (db *PollsTable) Available(userID int, category string) (poll Poll, _ error
 
 	return poll, stmt.Get(&poll, struct {
 		Category string
-		UserID   int
+		UserID   int64
 	}{
 		Category: category,
 		UserID:   userID,

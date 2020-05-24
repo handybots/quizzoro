@@ -15,14 +15,14 @@ const (
 )
 
 type UsersStorage interface {
-	Create(id int) error
-	Update(id int, user User) error
-	ByID(id int) (User, error)
-	State(id int) (string, error)
-	Privacy(id int) (bool, error)
-	InvertPrivacy(id int) (bool, error)
-	Cache(id int) (UserCache, error)
-	AddPoll(id int, poll PassedPoll) error
+	Create(id int64) error
+	Update(id int64, user User) error
+	ByID(id int64) (User, error)
+	State(id int64) (string, error)
+	Privacy(id int64) (bool, error)
+	InvertPrivacy(id int64) (bool, error)
+	Cache(id int64) (UserCache, error)
+	AddPoll(id int64, poll PassedPoll) error
 	TopStats() ([]UserStats, error)
 	Stats(id int) (UserStats, error)
 }
@@ -46,18 +46,18 @@ type UserCache struct {
 	LastCategory  string `sq:"last_category,omitempty"`
 }
 
-func (db *UsersTable) Create(id int) error {
+func (db *UsersTable) Create(id int64) error {
 	const q = `INSERT INTO users (id) VALUES (?)`
 	_, err := db.Exec(q, id)
 	return err
 }
 
-func (db *UsersTable) ByID(id int) (user User, err error) {
+func (db *UsersTable) ByID(id int64) (user User, err error) {
 	const q = `SELECT * FROM users WHERE id=?`
 	return user, db.Get(&user, q, id)
 }
 
-func (db *UsersTable) Update(id int, user User) error {
+func (db *UsersTable) Update(id int64, user User) error {
 	q, args, err := sq.
 		Update("users").
 		SetMap(structs.Map(user)).
@@ -71,12 +71,12 @@ func (db *UsersTable) Update(id int, user User) error {
 	return err
 }
 
-func (db *UsersTable) State(id int) (state string, err error) {
+func (db *UsersTable) State(id int64) (state string, err error) {
 	const q = `SELECT state FROM users WHERE id=?`
 	return state, db.Get(&state, q, id)
 }
 
-func (db *UsersTable) InvertPrivacy(id int) (privacy bool, _ error) {
+func (db *UsersTable) InvertPrivacy(id int64) (privacy bool, _ error) {
 	tx, err := db.Beginx()
 	if err != nil {
 		return false, err
@@ -97,12 +97,12 @@ func (db *UsersTable) InvertPrivacy(id int) (privacy bool, _ error) {
 	return privacy, tx.Commit()
 }
 
-func (db *UsersTable) Privacy(id int) (privacy bool, _ error) {
+func (db *UsersTable) Privacy(id int64) (privacy bool, _ error) {
 	const q = `SELECT privacy FROM users WHERE id=?`
 	return privacy, db.Get(&privacy, q, id)
 }
 
-func (db *UsersTable) Cache(id int) (cache UserCache, err error) {
+func (db *UsersTable) Cache(id int64) (cache UserCache, err error) {
 	const q = `
 		SELECT
 		   last_poll_id,
@@ -114,7 +114,7 @@ func (db *UsersTable) Cache(id int) (cache UserCache, err error) {
 	return cache, db.Get(&cache, q, id)
 }
 
-func (db *UsersTable) AddPoll(id int, poll PassedPoll) error {
+func (db *UsersTable) AddPoll(id int64, poll PassedPoll) error {
 	const q = `INSERT INTO passed_polls (user_id, poll_id, correct) VALUES (?, ?, ?)`
 	_, err := db.Exec(q, id, poll.PollID, poll.Correct)
 	return err
@@ -132,6 +132,7 @@ func (db *UsersTable) TopStats() (stats []UserStats, err error) {
 				WHERE user_id=users.id AND correct=0
 			) incorrect
 		FROM users
+		WHERE id > 0
 		ORDER BY correct
 		LIMIT 3`
 

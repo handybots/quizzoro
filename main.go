@@ -70,6 +70,7 @@ func main() {
 	b.Handle("/settings", h.OnSettings)
 	b.Handle("/skip", h.OnSkip)
 	b.Handle("/stop", h.OnStop)
+	b.Handle(tb.OnAddedToGroup, h.OnStart)
 	b.Handle(tb.OnPollAnswer, h.OnPollAnswer)
 	b.Handle(b.Button("start"), h.OnCategories)
 	b.Handle(b.Button("stats"), h.OnStats)

@@ -40,7 +40,7 @@ func (h Handler) OnCategory(c *tb.Callback) {
 }
 
 func (h Handler) onCategory(c *tb.Callback) error {
-	state, err := h.db.Users.State(c.Sender.ID)
+	state, err := h.db.Users.State(c.Message.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (h Handler) onCategory(c *tb.Callback) error {
 
 	category := c.Data
 	if category == "random" {
-		msg, err := h.b.Send(c.Sender, tb.Cube)
+		msg, err := h.b.Send(c.Message.Chat, tb.Cube)
 		if err != nil {
 			return err
 		}
@@ -78,11 +78,11 @@ func (h Handler) onCategory(c *tb.Callback) error {
 	}
 
 	update := storage.User{State: storage.StateWaiting}
-	if err := h.db.Users.Update(c.Sender.ID, update); err != nil {
+	if err := h.db.Users.Update(c.Message.Chat.ID, update); err != nil {
 		return err
 	}
 
-	return h.sendQuiz(c.Sender, category)
+	return h.sendQuiz(c.Message.Chat, category)
 }
 
 func randCategory(s string) int {

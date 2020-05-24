@@ -25,7 +25,7 @@ func (h Handler) OnStop(m *tb.Message) {
 }
 
 func (h Handler) onSkip(m *tb.Message) error {
-	state, err := h.db.Users.State(m.Sender.ID)
+	state, err := h.db.Users.State(m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func (h Handler) onSkip(m *tb.Message) error {
 		return nil
 	}
 
-	cache, err := h.db.Users.Cache(m.Sender.ID)
+	cache, err := h.db.Users.Cache(m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -43,11 +43,11 @@ func (h Handler) onSkip(m *tb.Message) error {
 		ChatID:    m.Chat.ID,
 	})
 
-	return h.sendQuiz(m.Sender, cache.LastCategory)
+	return h.sendQuiz(m.Chat, cache.LastCategory)
 }
 
 func (h Handler) onStop(m *tb.Message) error {
-	state, err := h.db.Users.State(m.Sender.ID)
+	state, err := h.db.Users.State(m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -55,7 +55,7 @@ func (h Handler) onStop(m *tb.Message) error {
 		return nil
 	}
 
-	cache, err := h.db.Users.Cache(m.Sender.ID)
+	cache, err := h.db.Users.Cache(m.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -65,22 +65,24 @@ func (h Handler) onStop(m *tb.Message) error {
 		ChatID:    m.Chat.ID,
 	})
 
-	if err := h.sendCategories(m.Sender); err != nil {
+	if err := h.sendCategories(m.Chat); err != nil {
 		return err
 	}
 
-	return h.db.Users.Update(m.Sender.ID, storage.User{
+	return h.db.Users.Update(m.Chat.ID, storage.User{
 		State: storage.StateDefault,
 	})
 }
 
-func (h Handler) sendQuiz(user *tb.User, category string) error {
-	privacy, err := h.db.Users.Privacy(user.ID)
+func (h Handler) sendQuiz(to tb.Recipient, category string) error {
+	userID, _ := strconv.ParseInt(to.Recipient(), 10, 64)
+
+	privacy, err := h.db.Users.Privacy(userID)
 	if err != nil {
 		return err
 	}
 
-	avail, err := h.db.Polls.Available(user.ID, category)
+	avail, err := h.db.Polls.Available(userID, category)
 	if err == nil {
 		var (
 			msg *tb.Message
@@ -88,9 +90,9 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 		if privacy {
 			answers := avail.Answers
 			correct := shuffleWithCorrect(answers, avail.Correct)
-			msg, err = h.sendPoll(user, avail.Question, answers, correct)
+			msg, err = h.sendPoll(to, avail.Question, answers, correct)
 		} else {
-			msg, err = h.b.Forward(user, avail)
+			msg, err = h.b.Forward(to, avail)
 		}
 		if err != nil {
 			return err
@@ -101,7 +103,7 @@ func (h Handler) sendQuiz(user *tb.User, category string) error {
 			LastMessageID: strconv.Itoa(msg.ID),
 			LastCategory:  category,
 		}
-		return h.db.Users.Update(user.ID, storage.User{
+		return h.db.Users.Update(userID, storage.User{
 			State:     storage.StateQuiz,
 			UserCache: cache,
 		})
@@ -189,9 +191,9 @@ TRIVIA:
 	}
 
 	if privacy {
-		msg, err = h.sendPoll(user, question, answers, correct)
+		msg, err = h.sendPoll(to, question, answers, correct)
 	} else {
-		msg, err = h.b.Forward(user, msg)
+		msg, err = h.b.Forward(to, msg)
 	}
 	if err != nil {
 		return err
@@ -202,15 +204,13 @@ TRIVIA:
 		LastMessageID: strconv.Itoa(msg.ID),
 		LastCategory:  category,
 	}
-	return h.db.Users.Update(user.ID, storage.User{
+	return h.db.Users.Update(userID, storage.User{
 		State:     storage.StateQuiz,
 		UserCache: cache,
 	})
 }
 
-func (h Handler) sendPoll(to tb.Recipient,
-	q string, a []string, i int) (*tb.Message, error) {
-
+func (h Handler) sendPoll(to tb.Recipient, q string, a []string, i int) (*tb.Message, error) {
 	poll := &tb.Poll{
 		Type:          tb.PollQuiz,
 		CorrectOption: i,

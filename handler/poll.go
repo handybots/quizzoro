@@ -16,7 +16,7 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return nil
 	}
 
-	state, err := h.db.Users.State(pa.User.ID)
+	state, err := h.db.Users.State(int64(pa.User.ID))
 	if err != nil {
 		return err
 	}
@@ -24,7 +24,7 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return nil
 	}
 
-	cache, err := h.db.Users.Cache(pa.User.ID)
+	cache, err := h.db.Users.Cache(int64(pa.User.ID))
 	if err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		PollID:  cache.LastPollID,
 		Correct: pa.Options[0] == correct,
 	}
-	if err := h.db.Users.AddPoll(pa.User.ID, poll); err != nil {
+	if err := h.db.Users.AddPoll(int64(pa.User.ID), poll); err != nil {
 		return err
 	}
 

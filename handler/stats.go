@@ -40,7 +40,7 @@ func (h Handler) onStats(m *tb.Message) error {
 	}
 
 	_, err = h.b.Send(
-		m.Sender,
+		m.Chat,
 		h.b.Text("stats", statsx),
 		tb.ModeHTML)
 	return err

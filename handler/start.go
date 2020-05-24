@@ -32,13 +32,13 @@ func (h Handler) OnCategories(m *tb.Message) {
 }
 
 func (h Handler) onSettings(m *tb.Message) error {
-	privacy, err := h.db.Users.Privacy(m.Sender.ID)
+	privacy, err := h.db.Users.Privacy(m.Chat.ID)
 	if err != nil {
 		return err
 	}
 
 	_, err = h.b.Send(
-		m.Sender,
+		m.Chat,
 		h.b.Text("privacy"),
 		h.b.InlineMarkup("privacy", privacy),
 		tb.ModeHTML)
@@ -48,21 +48,25 @@ func (h Handler) onSettings(m *tb.Message) error {
 func (h Handler) onStart(m *tb.Message) error {
 	var created bool
 
-	user, err := h.db.Users.ByID(m.Sender.ID)
+	user, err := h.db.Users.ByID(m.Chat.ID)
 	if created = err == sql.ErrNoRows; created {
-		err := h.db.Users.Create(m.Sender.ID)
+		if m.FromGroup() {
+			err = h.db.Users.Create(m.Chat.ID)
+		} else {
+			err = h.db.Users.Create(int64(m.Sender.ID))
+		}
 		if err != nil {
 			return err
 		}
 	} else if err != nil {
 		return err
 	} else if user.State != storage.StateDefault {
-		return h.sendStop(m.Sender)
+		return h.sendStop(m.Chat)
 	}
 
 	_, err = h.b.Send(
-		m.Sender,
-		h.b.Text("start", m.Sender),
+		m.Chat,
+		h.b.Text("start", m.Chat),
 		h.b.Markup("menu"),
 		tb.ModeHTML)
 	if err != nil {
@@ -81,7 +85,7 @@ func (h Handler) onPrivacy(c *tb.Callback) error {
 		Text: h.b.String("privacy"),
 	})
 
-	privacy, err := h.db.Users.InvertPrivacy(c.Sender.ID)
+	privacy, err := h.db.Users.InvertPrivacy(c.Message.Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -92,14 +96,14 @@ func (h Handler) onPrivacy(c *tb.Callback) error {
 }
 
 func (h Handler) onCategories(m *tb.Message) error {
-	state, err := h.db.Users.State(m.Sender.ID)
+	state, err := h.db.Users.State(m.Chat.ID)
 	if err != nil {
 		return err
 	}
 	if state != storage.StateDefault {
-		return h.sendStop(m.Sender)
+		return h.sendStop(m.Chat)
 	}
-	return h.sendCategories(m.Sender)
+	return h.sendCategories(m.Chat)
 }
 
 func (h Handler) sendCategories(to tb.Recipient) error {
