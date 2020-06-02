@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/opentdb"
 	"github.com/demget/quizzorobot/storage"
 	"github.com/demget/quizzorobot/translate"
@@ -169,7 +170,7 @@ TRIVIA:
 		}
 	} else {
 		moderation = "moderation"
-		answers = trueFalseAnswers
+		answers = bot.TrueFalseAnswers
 		if trivia.CorrectAnswer == "False" {
 			correct = 1
 		}

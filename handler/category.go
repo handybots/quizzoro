@@ -26,10 +26,6 @@ var categoryOrder = []string{
 	"random",
 }
 
-var trueFalseAnswers = []string{
-	"Правда", "Ложь",
-}
-
 func (h Handler) OnCategory(c *tb.Callback) {
 	defer h.b.Respond(c)
 	if err := h.onCategory(c); err != nil {

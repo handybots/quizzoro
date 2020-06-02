@@ -22,3 +22,7 @@ type Stats struct {
 	Top   []storage.UserStats
 	User  storage.UserStats
 }
+
+var TrueFalseAnswers = []string{
+	"Правда", "Ложь",
+}
