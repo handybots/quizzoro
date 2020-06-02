@@ -18,15 +18,15 @@ func (h Handler) Middleware(u *tb.Update) bool {
 		f = eventFields(u.Message)
 
 		m := u.Message
-		if tracker.IsSpam(m.Chat.ID, m.Text) {
-			return false
+		if m.Text != "" && tracker.IsSpam(m.Chat.ID, m.Text) {
+			f["spam"] = true
 		}
 	case u.Callback != nil:
 		f = eventFields(u.Callback)
 
 		c := u.Callback
 		if tracker.IsSpam(c.Message.Chat.ID, c.Data) {
-			return false
+			f["spam"] = true
 		}
 	case u.Poll != nil:
 		f = eventFields(u.Poll)
@@ -40,7 +40,8 @@ func (h Handler) Middleware(u *tb.Update) bool {
 	delete(f, "data")
 	logrus.WithFields(f).Info(data)
 
-	return true
+	_, spam := f["spam"]
+	return !spam
 }
 
 func (h Handler) OnError(v interface{}, err error) {
