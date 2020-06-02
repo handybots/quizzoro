@@ -99,11 +99,19 @@ func (h Handler) sendQuiz(to tb.Recipient, category string) error {
 	avail, err := h.db.Polls.Available(chatID, category)
 	if err == nil {
 		var (
-			msg *tb.Message
+			msg     *tb.Message
+			answers []string
+			correct string
 		)
 		if privacy {
-			answers := avail.Answers
-			correct := shuffleWithCorrect(answers, avail.Correct)
+			if avail.IsEng {
+				answers = avail.AnswersEng
+				correct = avail.CorrectEng
+			} else {
+				answers = avail.Answers
+				correct = avail.Correct
+			}
+			correct := shuffleWithCorrect(answers, correct)
 			msg, err = h.sendPoll(to, avail.Question, answers, correct)
 		} else {
 			msg, err = h.b.Forward(to, avail)

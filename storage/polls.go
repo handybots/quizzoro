@@ -26,6 +26,7 @@ type Poll struct {
 	ChatID      int64   `sq:"chat_id,omitempty"`
 	Category    string  `sq:"category,omitempty"`
 	Difficulty  string  `sq:"difficulty,omitempty"`
+	IsEng       bool    `sq:"is_eng,omitempty"`
 	Question    string  `sq:"question,omitempty"`
 	QuestionEng string  `sq:"question_eng,omitempty"`
 	Correct     string  `sq:"correct,omitempty"`

@@ -57,6 +57,7 @@ func (h Handler) onBadAnswers(c *tb.Callback) error {
 	// manipulations in OnPollAnswer handler.
 
 	cached.ID = msg.Poll.ID
+	cached.IsEng = true
 	cached.MessageID = strconv.Itoa(msg.ID)
 
 	if err := h.db.Polls.Create(cached); err != nil {
