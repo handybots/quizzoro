@@ -7,7 +7,7 @@
 ${ if gt (len .Chats) 0 -}
 🥇 <a href="tg://user?id=${ (index .Chats 0).ID }">${ (index .Chats 0).FirstName }</a>
 <b>${ (index .Top 0).Rate }%</b> правильных ответов
-<b>${ (index .Top 0).Total }</b> пройденных викторин
+<b>${ (index .Top 0).Total }</b> – викторин пройдено
 ${- else -}
 🥇 <i>Здесь можешь быть ты!</i>
 ${- end }
@@ -15,7 +15,7 @@ ${- end }
 ${ if gt (len .Chats) 1 -}
 🥈 <a href="tg://user?id=${ (index .Chats 1).ID }">${ (index .Chats 1).FirstName }</a>
 <b>${ (index .Top 1).Rate }%</b> правильных ответов
-<b>${ (index .Top 1).Total }</b> пройденных викторин
+<b>${ (index .Top 1).Total }</b> – викторин пройдено
 ${- else -}
 🥈 <i>Здесь можешь быть ты!</i>
 ${- end }
@@ -23,7 +23,7 @@ ${- end }
 ${ if gt (len .Chats) 2 -}
 🥉 <a href="tg://user?id=${ (index .Chats 2).ID }">${ (index .Chats 2).FirstName }</a>
 <b>${ (index .Top 2).Rate }%</b> правильных ответов
-<b>${ (index .Top 2).Total }</b> пройденных викторин
+<b>${ (index .Top 2).Total }</b> – викторин пройдено
 ${- else -}
 🥉 <i>Здесь можешь быть ты!</i>
 ${- end }
