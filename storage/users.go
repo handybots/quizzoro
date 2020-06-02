@@ -18,11 +18,13 @@ type UsersStorage interface {
 	Create(id int64) error
 	Update(id int64, user User) error
 	ByID(id int64) (User, error)
+	ByPollID(pollID string) (User, error)
 	State(id int64) (string, error)
 	Privacy(id int64) (bool, error)
 	InvertPrivacy(id int64) (bool, error)
 	Cache(id int64) (UserCache, error)
 	AddPoll(id int64, poll PassedPoll) error
+	HasPoll(id int64, pollID string) (bool, error)
 	TopStats() ([]UserStats, error)
 	Stats(id int) (UserStats, error)
 }
@@ -35,12 +37,13 @@ type User struct {
 	Model     `sq:"-"`
 	UserCache `sq:",flatten,omitempty"`
 
-	ID      int    `sq:"id,omitempty"`
+	ID      int64  `sq:"id,omitempty"`
 	State   string `sq:"state,omitempty"`
 	Privacy bool   `sq:"privacy,omitempty"`
 }
 
 type UserCache struct {
+	OrigPollID    string `sq:"orig_poll_id,omitempty"`
 	LastPollID    string `sq:"last_poll_id,omitempty"`
 	LastMessageID string `sq:"last_message_id,omitempty"`
 	LastCategory  string `sq:"last_category,omitempty"`
@@ -52,9 +55,14 @@ func (db *UsersTable) Create(id int64) error {
 	return err
 }
 
-func (db *UsersTable) ByID(id int64) (user User, err error) {
+func (db *UsersTable) ByID(id int64) (user User, _ error) {
 	const q = `SELECT * FROM users WHERE id=?`
 	return user, db.Get(&user, q, id)
+}
+
+func (db *UsersTable) ByPollID(pollID string) (user User, _ error) {
+	const q = `SELECT * FROM users WHERE last_poll_id=?`
+	return user, db.Get(&user, q, pollID)
 }
 
 func (db *UsersTable) Update(id int64, user User) error {
@@ -71,7 +79,7 @@ func (db *UsersTable) Update(id int64, user User) error {
 	return err
 }
 
-func (db *UsersTable) State(id int64) (state string, err error) {
+func (db *UsersTable) State(id int64) (state string, _ error) {
 	const q = `SELECT state FROM users WHERE id=?`
 	return state, db.Get(&state, q, id)
 }
@@ -102,12 +110,13 @@ func (db *UsersTable) Privacy(id int64) (privacy bool, _ error) {
 	return privacy, db.Get(&privacy, q, id)
 }
 
-func (db *UsersTable) Cache(id int64) (cache UserCache, err error) {
+func (db *UsersTable) Cache(id int64) (cache UserCache, _ error) {
 	const q = `
 		SELECT
-		   last_poll_id,
-		   last_message_id,
-		   last_category
+			orig_poll_id,
+		    last_poll_id,
+		    last_message_id,
+		    last_category
 		FROM users
 		WHERE id=?`
 
@@ -120,7 +129,15 @@ func (db *UsersTable) AddPoll(id int64, poll PassedPoll) error {
 	return err
 }
 
-func (db *UsersTable) TopStats() (stats []UserStats, err error) {
+func (db *UsersTable) HasPoll(id int64, pollID string) (has bool, _ error) {
+	const q = `SELECT EXISTS(
+    	SELECT 1 FROM passed_polls 
+    	WHERE user_id=? AND poll_id=?
+    )`
+	return has, db.Get(&has, q, id, pollID)
+}
+
+func (db *UsersTable) TopStats() (stats []UserStats, _ error) {
 	const q = `
 		SELECT *,
 		    (
@@ -139,7 +156,7 @@ func (db *UsersTable) TopStats() (stats []UserStats, err error) {
 	return stats, db.Select(&stats, q)
 }
 
-func (db *UsersTable) Stats(id int) (stats UserStats, err error) {
+func (db *UsersTable) Stats(id int) (stats UserStats, _ error) {
 	const q = `
 		SELECT *,
 		    (

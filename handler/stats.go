@@ -26,7 +26,7 @@ func (h Handler) onStats(m *tb.Message) error {
 
 	var chats []tb.Chat
 	for _, t := range top {
-		chat, err := h.b.ChatByID(strconv.Itoa(t.ID))
+		chat, err := h.b.ChatByID(strconv.FormatInt(t.ID, 10))
 		if err != nil {
 			return err
 		}

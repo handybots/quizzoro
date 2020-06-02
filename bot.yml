@@ -2,6 +2,7 @@ long_poller: {}
 
 vars:
   quizzes_chat: -418035651
+  open_period: 20
 
 strings:
   privacy: 'Настройки изменены!'

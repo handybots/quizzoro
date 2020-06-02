@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"database/sql"
+
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
 )
@@ -16,7 +18,19 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return nil
 	}
 
-	state, err := h.db.Users.State(int64(pa.User.ID))
+	var (
+		chatID int64
+	)
+	user, err := h.db.Users.ByPollID(pa.PollID)
+	if err == sql.ErrNoRows {
+		chatID = int64(pa.User.ID)
+	} else if err == nil {
+		chatID = user.ID
+	} else {
+		return err
+	}
+
+	state, err := h.db.Users.State(chatID)
 	if err != nil {
 		return err
 	}
@@ -24,22 +38,32 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return nil
 	}
 
-	cache, err := h.db.Users.Cache(int64(pa.User.ID))
+	cache, err := h.db.Users.Cache(chatID)
 	if err != nil {
 		return err
 	}
 
-	correct, err := h.db.Polls.CorrectAnswer(cache.LastPollID)
+	correct, err := h.db.Polls.CorrectAnswer(cache.OrigPollID)
+	if err != nil {
+		return err
+	}
+
+	has, err := h.db.Users.HasPoll(chatID, cache.OrigPollID)
 	if err != nil {
 		return err
 	}
 
 	poll := storage.PassedPoll{
-		PollID:  cache.LastPollID,
+		PollID:  cache.OrigPollID,
 		Correct: pa.Options[0] == correct,
 	}
-	if err := h.db.Users.AddPoll(int64(pa.User.ID), poll); err != nil {
-		return err
+	if !has {
+		if err := h.db.Users.AddPoll(chatID, poll); err != nil {
+			return err
+		}
+	}
+	if fromGroup(chatID) {
+		return h.db.Users.AddPoll(int64(pa.User.ID), poll)
 	}
 
 	return h.sendQuiz(&pa.User, cache.LastCategory)

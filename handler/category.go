@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"math/rand"
-
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
@@ -83,9 +81,4 @@ func (h Handler) onCategory(c *tb.Callback) error {
 	}
 
 	return h.sendQuiz(c.Message.Chat, category)
-}
-
-func randCategory(s string) int {
-	category := categories[s]
-	return category[rand.Intn(len(category))]
 }

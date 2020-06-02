@@ -1,12 +1,15 @@
 package bot
 
 import (
+	"time"
+
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
 )
 
 type Config struct {
-	QuizzesChat tb.ChatID `json:"quizzes_chat"`
+	QuizzesChat tb.ChatID     `json:"quizzes_chat"`
+	OpenPeriod  time.Duration `json:"open_period"`
 }
 
 type Random struct {

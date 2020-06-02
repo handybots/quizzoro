@@ -107,7 +107,7 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 func (db *PollsTable) Available(userID int64, category string) (poll Poll, _ error) {
 	const q = `
 		SELECT * FROM polls WHERE category=:category
-		AND id != (SELECT last_poll_id FROM users WHERE id=:user_id)
+		AND id != (SELECT orig_poll_id FROM users WHERE id=:user_id)
 		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=:user_id)
 		ORDER BY RAND() LIMIT 1`
 

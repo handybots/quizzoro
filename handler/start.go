@@ -14,6 +14,9 @@ func (h Handler) OnStart(m *tb.Message) {
 	}
 }
 func (h Handler) OnSettings(m *tb.Message) {
+	if m.FromGroup() {
+		return
+	}
 	if err := h.onSettings(m); err != nil {
 		h.OnError(m, err)
 	}
@@ -38,7 +41,7 @@ func (h Handler) onSettings(m *tb.Message) error {
 	}
 
 	_, err = h.b.Send(
-		m.Chat,
+		m.Sender,
 		h.b.Text("privacy"),
 		h.b.InlineMarkup("privacy", privacy),
 		tb.ModeHTML)
@@ -73,13 +76,14 @@ func (h Handler) onStart(m *tb.Message) error {
 		return err
 	}
 
-	if created {
+	if created && !m.FromGroup() {
 		<-time.After(5 * time.Second)
 		return h.onSettings(m)
 	}
 	return nil
 }
 
+// TODO: move to settings.go
 func (h Handler) onPrivacy(c *tb.Callback) error {
 	defer h.b.Respond(c, &tb.CallbackResponse{
 		Text: h.b.String("privacy"),
