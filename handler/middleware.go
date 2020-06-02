@@ -4,6 +4,7 @@ import (
 	"log"
 	"strings"
 
+	"github.com/demget/quizzorobot/handler/tracker"
 	tb "github.com/demget/telebot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -15,8 +16,18 @@ func (h Handler) Middleware(u *tb.Update) bool {
 	switch {
 	case u.Message != nil:
 		f = eventFields(u.Message)
+
+		m := u.Message
+		if tracker.IsSpam(m.Chat.ID, m.Text) {
+			return false
+		}
 	case u.Callback != nil:
 		f = eventFields(u.Callback)
+
+		c := u.Callback
+		if tracker.IsSpam(c.Message.Chat.ID, c.Data) {
+			return false
+		}
 	case u.Poll != nil:
 		f = eventFields(u.Poll)
 	case u.PollAnswer != nil:
@@ -24,8 +35,6 @@ func (h Handler) Middleware(u *tb.Update) bool {
 	default:
 		return false
 	}
-
-	// TODO: Handle possible spam
 
 	data := f["data"]
 	delete(f, "data")
