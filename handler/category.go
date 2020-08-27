@@ -42,29 +42,35 @@ func (h Handler) onCategory(c *tb.Callback) error {
 		return nil
 	}
 
+	_ = h.b.Delete(c.Message)
+
 	category := c.Data
 	if category == "random" {
 		msg, err := h.b.Send(c.Message.Chat, tb.Cube)
 		if err != nil {
 			return err
 		}
+
+		// dice value is 1-6
 		category = categoryOrder[msg.Dice.Value-1]
 
 		r := bot.Random{
 			Value:    msg.Dice.Value,
 			Category: h.b.String(category),
 		}
-		_, err = h.b.Edit(
-			c.Message,
+		_, err = h.b.Send(
+			c.Message.Chat,
 			h.b.Text("random", r),
+			h.b.Markup("quiz"),
 			tb.ModeHTML)
 		if err != nil {
 			return err
 		}
 	} else {
-		_, err := h.b.Edit(
-			c.Message,
+		_, err := h.b.Send(
+			c.Message.Chat,
 			h.b.Text("chosen", h.b.String(category)),
+			h.b.Markup("quiz"),
 			tb.ModeHTML)
 		if err != nil {
 			return err

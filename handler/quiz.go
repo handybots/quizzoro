@@ -68,7 +68,12 @@ func (h Handler) onStop(m *tb.Message) error {
 		ChatID:    m.Chat.ID,
 	})
 
-	if err := h.sendCategories(m.Chat); err != nil {
+	_, err = h.b.Send(
+		m.Chat,
+		h.b.Text("start", m.Chat),
+		h.b.Markup("menu"),
+		tb.ModeHTML)
+	if err != nil {
 		return err
 	}
 
@@ -78,7 +83,10 @@ func (h Handler) onStop(m *tb.Message) error {
 }
 
 func (h Handler) sendNotStarted(to tb.Recipient) error {
-	_, err := h.b.Send(to, h.b.Text("not_started"), tb.ModeHTML)
+	_, err := h.b.Send(to,
+		h.b.Text("not_started"),
+		h.b.Markup("menu"),
+		tb.ModeHTML)
 	return err
 }
 

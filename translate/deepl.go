@@ -39,7 +39,7 @@ func (srv *DeepLService) Translate(from, to, text string) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("tranlate: deepl: response code is %d", resp.StatusCode)
+		return "", fmt.Errorf("translate: deepl: response code is %d", resp.StatusCode)
 	}
 
 	data, err := ioutil.ReadAll(resp.Body)

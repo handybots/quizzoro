@@ -1,7 +1,7 @@
 long_poller: {}
 
 vars:
-  quizzes_chat: -418035651
+  quizzes_chat: -423111143
   open_period: 20
 
 strings:
@@ -16,11 +16,16 @@ strings:
 buttons:
   start: '📊 Старт!'
   stats: '🏆 Рейтинг'
+  skip: 'Пропустить'
+  stop: 'Остановить'
 
 keyboards:
   menu:
     - - start
     - - stats
+  quiz:
+    - - skip
+    - - stop
 
 inline_buttons:
   privacy:

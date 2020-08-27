@@ -49,7 +49,7 @@ func (h Handler) onStart(m *tb.Message) error {
 	}
 
 	if created && !m.FromGroup() {
-		<-time.After(5 * time.Second)
+		<-time.After(3 * time.Second)
 		return h.onSettings(m)
 	}
 	return nil

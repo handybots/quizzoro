@@ -140,11 +140,11 @@ func (db *UsersTable) HasPoll(id int64, pollID string) (has bool, _ error) {
 func (db *UsersTable) TopStats() (stats []UserStats, _ error) {
 	const q = `
 		SELECT *,
-		    (
+			(
 				SELECT COUNT(*) FROM passed_polls
 				WHERE user_id=users.id AND correct=1
 			) correct,
-		    (
+			(
 				SELECT COUNT(*) FROM passed_polls
 				WHERE user_id=users.id AND correct=0
 			) incorrect

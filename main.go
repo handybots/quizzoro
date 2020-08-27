@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"math/rand"
-	"net"
 	"os"
 	"time"
 
@@ -12,7 +11,7 @@ import (
 	"github.com/demget/quizzorobot/opentdb"
 	"github.com/demget/quizzorobot/storage"
 
-	"github.com/bshuster-repo/logrus-logstash-hook"
+	"github.com/demget/clickrus"
 	tb "github.com/demget/telebot"
 	"github.com/sirupsen/logrus"
 )
@@ -20,9 +19,17 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 
-	if err := initLogger(); err != nil {
+	hook, err := clickrus.NewHook(clickrus.Config{
+		Addr:    os.Getenv("CLICKHOUSE_URL"),
+		Table:   "quizzoro.logs",
+		Columns: []string{"date", "time", "level", "message", "event", "user_id", "chat_id"},
+	})
+	if err != nil {
 		log.Fatal(err)
 	}
+
+	logrus.AddHook(hook)
+	logrus.SetOutput(os.Stdout)
 
 	tmpl := &tb.TemplateText{
 		Dir:        "data",
@@ -68,12 +75,13 @@ func main() {
 
 	b.Handle("/start", h.OnStart)
 	b.Handle("/settings", h.OnSettings)
-	b.Handle("/skip", h.OnSkip)
 	b.Handle("/stop", h.OnStop)
 	b.Handle(tb.OnAddedToGroup, h.OnStart)
 	b.Handle(tb.OnPollAnswer, h.OnPollAnswer)
 	b.Handle(b.Button("start"), h.OnCategories)
 	b.Handle(b.Button("stats"), h.OnStats)
+	b.Handle(b.Button("skip"), h.OnSkip)
+	b.Handle(b.Button("stop"), h.OnStop)
 	b.Handle(b.InlineButton("privacy"), h.OnPrivacy)
 	b.Handle(b.InlineButton("category"), h.OnCategory)
 	b.Handle(b.InlineButton("bad_quiz"), h.OnBadQuiz)
@@ -81,17 +89,4 @@ func main() {
 
 	b.Poller = tb.NewMiddlewarePoller(b.Poller, h.Middleware)
 	b.Start()
-}
-
-func initLogger() error {
-	conn, err := net.Dial("tcp", "localhost:5000")
-	if err != nil {
-		return err
-	}
-
-	f := logrustash.DefaultFormatter(logrus.Fields{"app": "quizzorobot"})
-	logrus.AddHook(logrustash.New(conn, f))
-
-	logrus.SetOutput(os.Stdout)
-	return nil
 }
