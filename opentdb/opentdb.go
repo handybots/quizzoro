@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"html"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -78,7 +80,9 @@ func New() (*Session, error) {
 		return nil, fmt.Errorf("opentdb: %s (%d)", result.Message, result.Code)
 	}
 
-	return &Session{token: result.Token}, nil
+	session := &Session{token: result.Token}
+	go session.pingWorker(time.Hour)
+	return session, nil
 }
 
 func (s Session) Trivia(category int) (*Trivia, error) {
@@ -118,4 +122,18 @@ func (s Session) Trivia(category int) (*Trivia, error) {
 	}
 
 	return &trivia, nil
+}
+
+func (s Session) pingWorker(d time.Duration) {
+	const url = "https://opentdb.com/api_category.php"
+
+	t := time.NewTicker(d)
+	for range t.C {
+		resp, err := http.DefaultClient.Get(url)
+		if err != nil {
+			log.Println(err)
+		} else {
+			resp.Body.Close()
+		}
+	}
 }

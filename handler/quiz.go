@@ -28,6 +28,10 @@ func (h Handler) OnStop(m *tb.Message) {
 }
 
 func (h Handler) onSkip(m *tb.Message) error {
+	if m.FromGroup() {
+		return nil
+	}
+
 	state, err := h.db.Users.State(m.Chat.ID)
 	if err != nil {
 		return err

@@ -3,6 +3,7 @@ package handler
 import (
 	"database/sql"
 
+	"github.com/demget/quizzorobot/handler/tracker"
 	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
 )
@@ -66,5 +67,6 @@ func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
 		return h.db.Users.AddPoll(int64(pa.User.ID), poll)
 	}
 
+	tracker.Data.Del(chatID)
 	return h.sendQuiz(&pa.User, cache.LastCategory)
 }

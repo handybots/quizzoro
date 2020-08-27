@@ -23,3 +23,9 @@ func (u *dataCache) Set(id int64, v string) {
 	u.m[id] = v
 	u.Unlock()
 }
+
+func (u *dataCache) Del(id int64) {
+	u.Lock()
+	delete(u.m, id)
+	u.Unlock()
+}

@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"sort"
 	"strconv"
 
 	"github.com/demget/quizzorobot/bot"
+	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
 )
 
@@ -19,10 +21,18 @@ func (h Handler) onStats(m *tb.Message) error {
 		return err
 	}
 
-	stats, err := h.db.Users.Stats(m.Sender.ID)
-	if err != nil {
-		return err
-	}
+	top = func() (filtered []storage.UserStats) {
+		for _, t := range top {
+			if t.Rate() > 0 {
+				filtered = append(filtered, t)
+			}
+		}
+		return
+	}()
+
+	sort.Slice(top, func(i, j int) bool {
+		return top[i].Rate() > top[j].Rate()
+	})
 
 	var chats []tb.Chat
 	for _, t := range top {
@@ -31,6 +41,11 @@ func (h Handler) onStats(m *tb.Message) error {
 			return err
 		}
 		chats = append(chats, *chat)
+	}
+
+	stats, err := h.db.Users.Stats(m.Sender.ID)
+	if err != nil {
+		return err
 	}
 
 	statsx := bot.Stats{

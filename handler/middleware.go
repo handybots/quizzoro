@@ -79,7 +79,7 @@ func (h Handler) Middleware(u *tb.Update) bool {
 		c := u.Callback
 		f = NewFields(c)
 
-		if tracker.IsSpam(c.Message.Chat.ID, c.Data) {
+		if tracker.IsSpam(c.Message.Chat.ID, f.data) {
 			f.Spam = true
 		}
 	case u.PollAnswer != nil:
