@@ -7,5 +7,5 @@ CREATE TABLE IF NOT EXISTS quizzoro.logs (
     event String,
     message String,
     user_id UInt32,
-    chat_id UInt64
+    chat_id Int64
 ) ENGINE = MergeTree(date, (level, event, user_id), 8192);

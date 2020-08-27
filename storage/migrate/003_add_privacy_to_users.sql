@@ -1,6 +1,6 @@
 -- +goose Up
 alter table users
-    add column privacy bool not null default false
+add column privacy bool not null default false
 after state;
 
 -- +goose Down

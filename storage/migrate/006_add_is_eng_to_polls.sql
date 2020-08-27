@@ -1,6 +1,6 @@
 -- +goose Up
 alter table polls
-    add column is_eng boolean not null default false
+add column is_eng boolean not null default false
 after difficulty;
 
 -- +goose Down

@@ -150,7 +150,7 @@ func (db *UsersTable) TopStats() (stats []UserStats, _ error) {
 			) incorrect
 		FROM users
 		WHERE id > 0
-		ORDER BY correct
+		ORDER BY correct * 100 / (correct + incorrect) DESC
 		LIMIT 3`
 
 	return stats, db.Select(&stats, q)
