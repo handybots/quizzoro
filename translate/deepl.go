@@ -12,19 +12,18 @@ import (
 )
 
 type DeepLService struct {
-	Key string
-	url string
+	key string
 }
 
 func (srv *DeepLService) Translate(from, to, text string) (string, error) {
 	params := url.Values{}
-	params.Set("auth_key", srv.Key)
+	params.Set("auth_key", srv.key)
 	params.Set("source_lang", from)
 	params.Set("target_lang", to)
 	params.Set("text", text)
 
 	req, err := http.NewRequest(http.MethodPost,
-		srv.url+"?auth_key="+srv.Key,
+		"https://api.deepl.com/v2/translate?auth_key="+srv.key,
 		strings.NewReader(params.Encode()))
 	if err != nil {
 		return "", err

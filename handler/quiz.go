@@ -10,8 +10,6 @@ import (
 	"github.com/demget/quizzorobot/bot"
 	"github.com/demget/quizzorobot/opentdb"
 	"github.com/demget/quizzorobot/storage"
-	"github.com/demget/quizzorobot/translate"
-
 	tb "github.com/demget/telebot"
 )
 
@@ -196,7 +194,7 @@ TRIVIA:
 		}
 	}
 
-	question, err := translate.Google.Translate("en", "ru", trivia.Question)
+	question, err := translateText(trivia.Question)
 	if err != nil {
 		return err
 	}

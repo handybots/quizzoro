@@ -11,14 +11,16 @@ type Translator interface {
 }
 
 var (
-	Google = GoogleService{}
+	Google   = GoogleService{}
+	MyMemory = MyMemoryService{}
+
+	DeepL = DeepLService{
+		key: os.Getenv("DEEPL_AUTHKEY"),
+	}
+
 	Yandex = YandexService{
 		sid:    atomic.NewString(""),
 		urlSID: "https://translate.yandex.ru",
 		urlAPI: "https://translate.yandex.net/api/v1/tr.json/translate",
-	}
-	DeepL = DeepLService{
-		Key: os.Getenv("DEEPL_AUTHKEY"),
-		url: "https://api.deepl.com/v2/translate",
 	}
 )
