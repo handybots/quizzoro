@@ -50,7 +50,9 @@ func Load() (*Session, error) {
 		return nil, err
 	}
 
-	return &Session{token: string(data)}, nil
+	session := &Session{token: string(data)}
+	go session.pingWorker(time.Hour)
+	return session, nil
 }
 
 // New requests a new session.
