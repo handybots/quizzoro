@@ -4,7 +4,7 @@ import (
 	"log"
 	"strings"
 
-	"github.com/demget/quizzorobot/handler/tracker"
+	"github.com/handybots/quizzoro/handler/tracker"
 
 	tb "github.com/demget/telebot"
 	"github.com/pkg/errors"

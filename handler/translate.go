@@ -3,7 +3,7 @@ package handler
 import (
 	"log"
 
-	"github.com/demget/quizzorobot/translate"
+	"github.com/handybots/quizzoro/translate"
 )
 
 // func init() {

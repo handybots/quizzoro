@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/demget/quizzorobot/bot"
-	"github.com/demget/quizzorobot/opentdb"
-	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
+	"github.com/handybots/quizzoro/bot"
+	"github.com/handybots/quizzoro/opentdb"
+	"github.com/handybots/quizzoro/storage"
 )
 
 func (h Handler) OnSkip(m *tb.Message) {

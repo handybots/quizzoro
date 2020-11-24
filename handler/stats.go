@@ -4,8 +4,8 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/demget/quizzorobot/bot"
-	"github.com/demget/quizzorobot/storage"
+	"github.com/handybots/quizzoro/bot"
+	"github.com/handybots/quizzoro/storage"
 	tb "github.com/demget/telebot"
 )
 

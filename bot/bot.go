@@ -3,8 +3,8 @@ package bot
 import (
 	"time"
 
-	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
+	"github.com/handybots/quizzoro/storage"
 )
 
 type Config struct {

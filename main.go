@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/demget/quizzorobot/bot"
-	"github.com/demget/quizzorobot/handler"
-	"github.com/demget/quizzorobot/opentdb"
-	"github.com/demget/quizzorobot/storage"
+	"github.com/handybots/quizzoro/bot"
+	"github.com/handybots/quizzoro/handler"
+	"github.com/handybots/quizzoro/opentdb"
+	"github.com/handybots/quizzoro/storage"
 
 	"github.com/demget/clickrus"
 	tb "github.com/demget/telebot"

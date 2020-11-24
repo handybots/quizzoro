@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
+	"github.com/handybots/quizzoro/storage"
 )
 
 func (h Handler) OnStart(m *tb.Message) {

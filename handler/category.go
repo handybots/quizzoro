@@ -1,9 +1,9 @@
 package handler
 
 import (
-	"github.com/demget/quizzorobot/bot"
-	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
+	"github.com/handybots/quizzoro/bot"
+	"github.com/handybots/quizzoro/storage"
 )
 
 var categories = map[string][]int{

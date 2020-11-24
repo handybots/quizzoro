@@ -3,9 +3,9 @@ package handler
 import (
 	"database/sql"
 
-	"github.com/demget/quizzorobot/handler/tracker"
-	"github.com/demget/quizzorobot/storage"
 	tb "github.com/demget/telebot"
+	"github.com/handybots/quizzoro/handler/tracker"
+	"github.com/handybots/quizzoro/storage"
 )
 
 func (h Handler) OnPollAnswer(pa *tb.PollAnswer) {
