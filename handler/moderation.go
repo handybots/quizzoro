@@ -3,29 +3,25 @@ package handler
 import (
 	"strconv"
 
-	tb "github.com/demget/telebot"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnBadQuiz(c *tb.Callback) {
-	if err := h.onBadQuiz(c); err != nil {
-		h.OnError(c, err)
-	}
+func (h Handler) OnBadQuiz(c tele.Context) error {
+	return h.onBadQuiz(c)
 }
 
-func (h Handler) onBadQuiz(c *tb.Callback) error {
+func (h Handler) onBadQuiz(c tele.Context) error {
 	if err := h.db.Polls.Delete(c.Data); err != nil {
 		return err
 	}
-	return h.b.Delete(c.Message)
+	return c.Delete()
 }
 
-func (h Handler) OnBadAnswers(c *tb.Callback) {
-	if err := h.onBadAnswers(c); err != nil {
-		h.OnError(c, err)
-	}
+func (h Handler) OnBadAnswers(c tele.Context) error {
+	return h.onBadAnswers(c)
 }
 
-func (h Handler) onBadAnswers(c *tb.Callback) error {
+func (h Handler) onBadAnswers(c tele.Context) error {
 	cached, err := h.db.Polls.ByID(c.Data)
 	if err != nil {
 		return err

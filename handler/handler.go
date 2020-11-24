@@ -5,19 +5,19 @@ import (
 	"github.com/handybots/quizzoro/opentdb"
 	"github.com/handybots/quizzoro/storage"
 
-	tb "github.com/demget/telebot"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
 type Config struct {
 	Conf bot.Config
-	Bot  *tb.Bot
+	Bot  *tele.Bot
 	DB   *storage.DB
 	TDB  *opentdb.Session
 }
 
 type Handler struct {
 	conf bot.Config
-	b    *tb.Bot
+	b    *tele.Bot
 	db   *storage.DB
 	tdb  *opentdb.Session
 }

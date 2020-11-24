@@ -1,8 +1,8 @@
 package handler
 
-import tb "github.com/demget/telebot"
+import tele "gopkg.in/tucnak/telebot.v3"
 
-func (h Handler) OnSettings(m *tb.Message) {
+func (h Handler) OnSettings(c tele.Context) error {
 	if m.FromGroup() {
 		return
 	}
@@ -11,37 +11,36 @@ func (h Handler) OnSettings(m *tb.Message) {
 	}
 }
 
-func (h Handler) OnPrivacy(c *tb.Callback) {
+func (h Handler) OnPrivacy(c tele.Context) error {
 	if err := h.onPrivacy(c); err != nil {
 		h.OnError(c, err)
 	}
 }
 
-func (h Handler) onSettings(m *tb.Message) error {
-	privacy, err := h.db.Users.Privacy(m.Chat.ID)
+func (h Handler) onSettings(c tele.Context) error {
+	privacy, err := h.db.Users.Privacy(c.Chat().ID)
 	if err != nil {
 		return err
 	}
 
-	_, err = h.b.Send(
-		m.Sender,
+	return c.Send(
 		h.b.Text("privacy"),
 		h.b.InlineMarkup("privacy", privacy),
-		tb.ModeHTML)
-	return err
+		tb.ModeHTML,
+	)
 }
 
-func (h Handler) onPrivacy(c *tb.Callback) error {
-	defer h.b.Respond(c, &tb.CallbackResponse{
+func (h Handler) onPrivacy(c tele.Context) error {
+	defer h.b.Respond(c.Callback(), &tele.CallbackResponse{
 		Text: h.b.String("privacy"),
 	})
 
-	privacy, err := h.db.Users.InvertPrivacy(c.Message.Chat.ID)
+	privacy, err := h.db.Users.InvertPrivacy(c.Chat().ID)
 	if err != nil {
 		return err
 	}
 
-	_, err = h.b.EditReplyMarkup(c.Message,
+	_, err = h.b.EditReplyMarkup(c.Message(),
 		h.b.InlineMarkup("privacy", privacy))
 	return err
 }

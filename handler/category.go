@@ -1,9 +1,9 @@
 package handler
 
 import (
-	tb "github.com/demget/telebot"
 	"github.com/handybots/quizzoro/bot"
 	"github.com/handybots/quizzoro/storage"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
 var categories = map[string][]int{
@@ -26,15 +26,13 @@ var categoryOrder = []string{
 	"random",
 }
 
-func (h Handler) OnCategory(c *tb.Callback) {
-	defer h.b.Respond(c)
-	if err := h.onCategory(c); err != nil {
-		h.OnError(c, err)
-	}
+func (h Handler) OnCategory(c tele.Context) error {
+	defer h.b.Respond(c.Callback())
+	return h.onCategory(c)
 }
 
-func (h Handler) onCategory(c *tb.Callback) error {
-	state, err := h.db.Users.State(c.Message.Chat.ID)
+func (h Handler) onCategory(c tele.Context) error {
+	state, err := h.db.Users.State(c.Message().Chat.ID)
 	if err != nil {
 		return err
 	}
@@ -42,11 +40,11 @@ func (h Handler) onCategory(c *tb.Callback) error {
 		return nil
 	}
 
-	_ = h.b.Delete(c.Message)
+	_ = c.Delete()
 
-	category := c.Data
+	category := c.Data()
 	if category == "random" {
-		msg, err := h.b.Send(c.Message.Chat, tb.Cube)
+		msg, err := h.b.Send(c.Message().Chat, tele.Cube)
 		if err != nil {
 			return err
 		}
@@ -58,21 +56,19 @@ func (h Handler) onCategory(c *tb.Callback) error {
 			Value:    msg.Dice.Value,
 			Category: h.b.String(category),
 		}
-		_, err = h.b.Send(
-			c.Message.Chat,
+		if err := c.Send(
 			h.b.Text("random", r),
 			h.b.Markup("quiz"),
-			tb.ModeHTML)
-		if err != nil {
+			tele.ModeHTML,
+		); err != nil {
 			return err
 		}
 	} else {
-		_, err := h.b.Send(
-			c.Message.Chat,
+		if err := c.Send(
 			h.b.Text("chosen", h.b.String(category)),
 			h.b.Markup("quiz"),
-			tb.ModeHTML)
-		if err != nil {
+			tb.ModeHTML,
+		); err != nil {
 			return err
 		}
 	}

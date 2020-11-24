@@ -3,12 +3,12 @@ package bot
 import (
 	"time"
 
-	tb "github.com/demget/telebot"
+	tele "gopkg.in/tucnak/telebot.v3"
 	"github.com/handybots/quizzoro/storage"
 )
 
 type Config struct {
-	QuizzesChat tb.ChatID     `json:"quizzes_chat"`
+	QuizzesChat tele.ChatID     `json:"quizzes_chat"`
 	OpenPeriod  time.Duration `json:"open_period"`
 }
 
@@ -18,7 +18,7 @@ type Random struct {
 }
 
 type Stats struct {
-	Chats []tb.Chat
+	Chats []tele.Chat
 	Top   []storage.UserStats
 	User  storage.UserStats
 }

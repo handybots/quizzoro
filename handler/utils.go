@@ -4,7 +4,7 @@ import (
 	"math/rand"
 	"strconv"
 
-	tb "github.com/demget/telebot"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
 // randCategory returns random opentdb category code

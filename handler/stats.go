@@ -6,16 +6,16 @@ import (
 
 	"github.com/handybots/quizzoro/bot"
 	"github.com/handybots/quizzoro/storage"
-	tb "github.com/demget/telebot"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnStats(m *tb.Message) {
+func (h Handler) OnStats(c tele.Context) error {
 	if err := h.onStats(m); err != nil {
 		h.OnError(m, err)
 	}
 }
 
-func (h Handler) onStats(m *tb.Message) error {
+func (h Handler) onStats(c tele.Context) error {
 	top, err := h.db.Users.TopStats()
 	if err != nil {
 		return err
@@ -54,9 +54,11 @@ func (h Handler) onStats(m *tb.Message) error {
 		User:  stats,
 	}
 
-	_, err = h.b.Send(
+	return c.Send(
 		m.Chat,
 		h.b.Text("stats", statsx),
-		tb.ModeHTML)
+		tb.ModeHTML,
+	)
+
 	return err
 }

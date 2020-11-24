@@ -12,8 +12,8 @@ import (
 	"github.com/handybots/quizzoro/storage"
 
 	"github.com/demget/clickrus"
-	tb "github.com/demget/telebot"
 	"github.com/sirupsen/logrus"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
 func main() {
@@ -31,19 +31,19 @@ func main() {
 	logrus.AddHook(hook)
 	logrus.SetOutput(os.Stdout)
 
-	tmpl := &tb.TemplateText{
+	tmpl := &tele.TemplateText{
 		Dir:        "data",
 		DelimLeft:  "${",
 		DelimRight: "}",
 	}
 
-	pref, err := tb.NewSettingsYAML("bot.yml", tmpl)
+	pref, err := tele.NewSettingsYAML("bot.yml", tmpl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	pref.Token = os.Getenv("TOKEN")
 
-	b, err := tb.NewBot(pref)
+	b, err := tele.NewBot(pref)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -73,11 +73,13 @@ func main() {
 		TDB:  tdb,
 	})
 
+	b.OnError = h.OnError
+
 	b.Handle("/start", h.OnStart)
 	b.Handle("/settings", h.OnSettings)
 	b.Handle("/stop", h.OnStop)
-	b.Handle(tb.OnAddedToGroup, h.OnStart)
-	b.Handle(tb.OnPollAnswer, h.OnPollAnswer)
+	b.Handle(tele.OnAddedToGroup, h.OnStart)
+	b.Handle(tele.OnPollAnswer, h.OnPollAnswer)
 	b.Handle(b.Button("start"), h.OnCategories)
 	b.Handle(b.Button("stats"), h.OnStats)
 	b.Handle(b.Button("skip"), h.OnSkip)
@@ -87,6 +89,6 @@ func main() {
 	b.Handle(b.InlineButton("bad_quiz"), h.OnBadQuiz)
 	b.Handle(b.InlineButton("bad_answers"), h.OnBadAnswers)
 
-	b.Poller = tb.NewMiddlewarePoller(b.Poller, h.Middleware)
+	// b.Poller = tele.NewMiddlewarePoller(b.Poller, h.Middleware) // todo:
 	b.Start()
 }

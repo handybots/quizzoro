@@ -3,18 +3,16 @@ package handler
 import (
 	"database/sql"
 
-	tb "github.com/demget/telebot"
 	"github.com/handybots/quizzoro/handler/tracker"
 	"github.com/handybots/quizzoro/storage"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnPollAnswer(pa *tb.PollAnswer) {
-	if err := h.onPollAnswer(pa); err != nil {
-		h.OnError(pa, err)
-	}
+func (h Handler) OnPollAnswer(c tele.Context) error {
+	return h.onPollAnswer(c.PollAnswer())
 }
 
-func (h Handler) onPollAnswer(pa *tb.PollAnswer) error {
+func (h Handler) onPollAnswer(pa *tele.PollAnswer) error {
 	if len(pa.Options) == 0 {
 		return nil
 	}

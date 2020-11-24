@@ -7,25 +7,23 @@ import (
 	"strings"
 	"time"
 
-	tb "github.com/demget/telebot"
 	"github.com/handybots/quizzoro/bot"
 	"github.com/handybots/quizzoro/opentdb"
 	"github.com/handybots/quizzoro/storage"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnSkip(m *tb.Message) {
-	if err := h.onSkip(m); err != nil {
-		h.OnError(m, err)
-	}
+func (h Handler) OnSkip(c tele.Context) error {
+	return h.onSkip(c)
 }
 
-func (h Handler) OnStop(m *tb.Message) {
-	if err := h.onStop(m); err != nil {
-		h.OnError(m, err)
-	}
+func (h Handler) OnStop(c tele.Context) error {
+	return h.onStop(c)
 }
 
-func (h Handler) onSkip(m *tb.Message) error {
+func (h Handler) onSkip(c tele.Context) error {
+	m := c.Message()
+
 	if m.FromGroup() {
 		return nil
 	}
@@ -51,7 +49,9 @@ func (h Handler) onSkip(m *tb.Message) error {
 	return h.sendQuiz(m.Chat, cache.LastCategory)
 }
 
-func (h Handler) onStop(m *tb.Message) error {
+func (h Handler) onStop(c tele.Context) error {
+	m := c.Message()
+
 	state, err := h.db.Users.State(m.Chat.ID)
 	if err != nil {
 		return err
@@ -70,12 +70,11 @@ func (h Handler) onStop(m *tb.Message) error {
 		ChatID:    m.Chat.ID,
 	})
 
-	_, err = h.b.Send(
-		m.Chat,
+	if err := c.Send(
 		h.b.Text("start", m.Chat),
 		h.b.Markup("menu"),
-		tb.ModeHTML)
-	if err != nil {
+		tele.ModeHTML,
+	); err != nil {
 		return err
 	}
 
@@ -84,7 +83,7 @@ func (h Handler) onStop(m *tb.Message) error {
 	})
 }
 
-func (h Handler) sendNotStarted(to tb.Recipient) error {
+func (h Handler) sendNotStarted(to tele.Recipient) error {
 	_, err := h.b.Send(to,
 		h.b.Text("not_started"),
 		h.b.Markup("menu"),
@@ -92,7 +91,7 @@ func (h Handler) sendNotStarted(to tb.Recipient) error {
 	return err
 }
 
-func (h Handler) sendQuiz(to tb.Recipient, category string) error {
+func (h Handler) sendQuiz(to tele.Recipient, category string) error {
 	var (
 		chatID  = parseChatID(to)
 		privacy = true
@@ -252,9 +251,9 @@ TRIVIA:
 	})
 }
 
-func (h Handler) sendPoll(to tb.Recipient, q string, a []string, i int) (*tb.Message, error) {
-	poll := &tb.Poll{
-		Type:          tb.PollQuiz,
+func (h Handler) sendPoll(to tele.Recipient, q string, a []string, i int) (*tele.Message, error) {
+	poll := &tele.Poll{
+		Type:          tele.PollQuiz,
 		CorrectOption: i,
 		Question:      q,
 	}
@@ -267,7 +266,7 @@ func (h Handler) sendPoll(to tb.Recipient, q string, a []string, i int) (*tb.Mes
 	return h.b.Send(to, poll)
 }
 
-func (h Handler) prepareGroupPoll(to tb.Recipient) {
+func (h Handler) prepareGroupPoll(to tele.Recipient) {
 	chatID := parseChatID(to)
 
 	f := func() error {
