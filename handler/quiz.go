@@ -33,7 +33,7 @@ func (h Handler) onSkip(c tele.Context) error {
 		return err
 	}
 	if state == storage.StateDefault {
-		return h.sendNotStarted(m.Chat)
+		return h.sendNotStarted(c)
 	}
 
 	cache, err := h.db.Users.Cache(m.Chat.ID)
@@ -41,12 +41,12 @@ func (h Handler) onSkip(c tele.Context) error {
 		return err
 	}
 
-	_ = h.b.Delete(tb.StoredMessage{
+	_ = h.b.Delete(tele.StoredMessage{
 		MessageID: cache.LastMessageID,
 		ChatID:    m.Chat.ID,
 	})
 
-	return h.sendQuiz(m.Chat, cache.LastCategory)
+	return h.sendQuiz(c, cache.LastCategory)
 }
 
 func (h Handler) onStop(c tele.Context) error {
@@ -57,7 +57,7 @@ func (h Handler) onStop(c tele.Context) error {
 		return err
 	}
 	if state == storage.StateDefault {
-		return h.sendNotStarted(m.Chat)
+		return h.sendNotStarted(c)
 	}
 
 	cache, err := h.db.Users.Cache(m.Chat.ID)
@@ -65,14 +65,14 @@ func (h Handler) onStop(c tele.Context) error {
 		return err
 	}
 
-	_ = h.b.Delete(tb.StoredMessage{
+	_ = h.b.Delete(tele.StoredMessage{
 		MessageID: cache.LastMessageID,
 		ChatID:    m.Chat.ID,
 	})
 
 	if err := c.Send(
-		h.b.Text("start", m.Chat),
-		h.b.Markup("menu"),
+		h.lt.Text(c, "start", m.Chat),
+		h.lt.Markup(c, "menu"),
 		tele.ModeHTML,
 	); err != nil {
 		return err
@@ -83,16 +83,17 @@ func (h Handler) onStop(c tele.Context) error {
 	})
 }
 
-func (h Handler) sendNotStarted(to tele.Recipient) error {
-	_, err := h.b.Send(to,
-		h.b.Text("not_started"),
-		h.b.Markup("menu"),
-		tb.ModeHTML)
-	return err
+func (h Handler) sendNotStarted(c tele.Context) error {
+	return c.Send(
+		h.lt.Text(c, "not_started"),
+		h.lt.Markup(c, "menu"),
+		tele.ModeHTML,
+	)
 }
 
-func (h Handler) sendQuiz(to tele.Recipient, category string) error {
+func (h Handler) sendQuiz(c tele.Context, category string) error {
 	var (
+		to      = c.Recipient()
 		chatID  = parseChatID(to)
 		privacy = true
 	)
@@ -108,7 +109,7 @@ func (h Handler) sendQuiz(to tele.Recipient, category string) error {
 	avail, err := h.db.Polls.Available(chatID, category)
 	if err == nil {
 		var (
-			msg     *tb.Message
+			msg     *tele.Message
 			answers []string
 			correct string
 		)
@@ -130,7 +131,7 @@ func (h Handler) sendQuiz(to tele.Recipient, category string) error {
 		}
 
 		if fromGroup(chatID) {
-			h.prepareGroupPoll(to)
+			h.prepareGroupPoll(c)
 		}
 
 		cache := storage.UserCache{
@@ -204,7 +205,7 @@ TRIVIA:
 	}
 
 	pollID := msg.Poll.ID
-	_, err = h.b.EditReplyMarkup(msg, h.b.InlineMarkup(moderation, pollID))
+	_, err = h.b.EditReplyMarkup(msg, h.lt.Markup(c, moderation, pollID))
 	if err != nil {
 		return err
 	}
@@ -236,7 +237,7 @@ TRIVIA:
 	}
 
 	if fromGroup(chatID) {
-		h.prepareGroupPoll(to)
+		h.prepareGroupPoll(c)
 	}
 
 	cache := storage.UserCache{
@@ -266,7 +267,8 @@ func (h Handler) sendPoll(to tele.Recipient, q string, a []string, i int) (*tele
 	return h.b.Send(to, poll)
 }
 
-func (h Handler) prepareGroupPoll(to tele.Recipient) {
+func (h Handler) prepareGroupPoll(c tele.Context) {
+	to := c.Recipient()
 	chatID := parseChatID(to)
 
 	f := func() error {
@@ -285,12 +287,13 @@ func (h Handler) prepareGroupPoll(to tele.Recipient) {
 			})
 		}
 
-		return h.sendQuiz(to, cache.LastCategory)
+		return h.sendQuiz(c, cache.LastCategory)
 	}
 
+	// todo: repair conf
 	time.AfterFunc(h.conf.OpenPeriod*time.Second, func() {
 		if err := f(); err != nil {
-			h.OnError(fmt.Sprintf("sendGroupPoll(%d)", chatID), err)
+			h.OnError(fmt.Errorf("sendGroupPoll(%d)", chatID), c)
 		}
 	})
 }

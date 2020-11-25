@@ -1,3 +1,5 @@
+// +build ignore
+
 package handler
 
 import (
@@ -6,9 +8,9 @@ import (
 
 	"github.com/handybots/quizzoro/handler/tracker"
 
-	tb "github.com/demget/telebot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
 
 type Fields struct {
@@ -21,8 +23,8 @@ type Fields struct {
 
 func NewFields(v interface{}) (f Fields) {
 	var (
-		user *tb.User
-		chat *tb.Chat
+		user *tele.User
+		chat *tele.Chat
 	)
 
 	switch vv := v.(type) {

@@ -54,29 +54,29 @@ func (h Handler) onCategory(c tele.Context) error {
 
 		r := bot.Random{
 			Value:    msg.Dice.Value,
-			Category: h.b.String(category),
+			Category: h.lt.String(category),
 		}
 		if err := c.Send(
-			h.b.Text("random", r),
-			h.b.Markup("quiz"),
+			h.lt.Text(c, "random", r),
+			h.lt.Markup(c, "quiz"),
 			tele.ModeHTML,
 		); err != nil {
 			return err
 		}
 	} else {
 		if err := c.Send(
-			h.b.Text("chosen", h.b.String(category)),
-			h.b.Markup("quiz"),
-			tb.ModeHTML,
+			h.lt.Text(c, "chosen", h.lt.String(category)),
+			h.lt.Markup(c, "quiz"),
+			tele.ModeHTML,
 		); err != nil {
 			return err
 		}
 	}
 
 	update := storage.User{State: storage.StateWaiting}
-	if err := h.db.Users.Update(c.Message.Chat.ID, update); err != nil {
+	if err := h.db.Users.Update(c.Chat().ID, update); err != nil {
 		return err
 	}
 
-	return h.sendQuiz(c.Message.Chat, category)
+	return h.sendQuiz(c, category)
 }

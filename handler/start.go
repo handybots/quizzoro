@@ -9,17 +9,16 @@ import (
 )
 
 func (h Handler) OnStart(c tele.Context) error {
-	if err := h.onStart(m); err != nil {
-		h.OnError(m, err)
-	}
+	return h.onStart(c)
 }
 
 func (h Handler) OnCategories(c tele.Context) error {
-	return h.onCategories(c.Message())
+	return h.onCategories(c)
 }
 
 func (h Handler) onStart(c tele.Context) error {
 	var created bool
+	m := c.Message()
 
 	user, err := h.db.Users.ByID(c.Chat().ID)
 	if created = err == sql.ErrNoRows; created {
@@ -34,47 +33,43 @@ func (h Handler) onStart(c tele.Context) error {
 	} else if err != nil {
 		return err
 	} else if user.State != storage.StateDefault {
-		return h.sendStop(c.Chat())
+		return h.sendStop(c)
 	}
 
 	if err := c.Send(
-		h.b.Text("start", c.Chat),
-		h.b.Markup("menu"),
-		tb.ModeHTML,
+		h.lt.Text(c, "start", c.Chat),
+		h.lt.Markup(c, "menu"),
+		tele.ModeHTML,
 	); err != nil {
 		return err
 	}
 
 	if created && !c.Message().FromGroup() {
 		<-time.After(3 * time.Second)
-		return h.onSettings(c.Message())
+		return h.onSettings(c)
 	}
 	return nil
 }
 
 func (h Handler) onCategories(c tele.Context) error {
-	m := c.Message()
-
-	state, err := h.db.Users.State(m.Chat.ID)
+	state, err := h.db.Users.State(c.Chat().ID)
 	if err != nil {
 		return err
 	}
 	if state != storage.StateDefault {
-		return h.sendStop(m.Chat)
+		return h.sendStop(c)
 	}
-	return h.sendCategories(m.Chat)
+	return h.sendCategories(c)
 }
 
 func (h Handler) sendCategories(c tele.Context) error {
 	return c.Send(
-		h.b.Text("categories"),
-		h.b.InlineMarkup("categories"),
-		tb.ModeHTML,
+		h.lt.Text(c, "categories"),
+		h.lt.Markup(c, "categories"),
+		tele.ModeHTML,
 	)
-	return err
 }
 
-func (h Handler) sendStop(to tb.Recipient) error {
-	_, err := h.b.Send(to, h.b.Text("stop"), tb.ModeHTML)
-	return err
+func (h Handler) sendStop(c tele.Context) error {
+	return c.Send(h.lt.Text(c, "stop"), tele.ModeHTML)
 }

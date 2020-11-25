@@ -35,7 +35,7 @@ func shuffleWithCorrect(s []string, correct string) (ind int) {
 }
 
 // parseChatID converts Recipient string to the integer ID.
-func parseChatID(to tb.Recipient) (n int64) {
+func parseChatID(to tele.Recipient) (n int64) {
 	n, _ = strconv.ParseInt(to.Recipient(), 10, 64)
 	return
 }
@@ -46,7 +46,7 @@ func fromGroup(to interface{}) bool {
 	switch to := to.(type) {
 	case int64:
 		return to < 0
-	case tb.Recipient:
+	case tele.Recipient:
 		return to.Recipient()[0] == '-'
 	default:
 		return false

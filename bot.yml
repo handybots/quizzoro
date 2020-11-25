@@ -1,17 +1,10 @@
-long_poller: {}
+settings:
+  token_env: TOKEN
+  parse_mode: html
 
-vars:
+config:
   quizzes_chat: -423111143
   open_period: 20
-
-strings:
-  privacy: 'Настройки изменены!'
-  general: '🌍 Общее'
-  history: '📜 История'
-  music: '🎹 Музыка'
-  books: '📚 Книги'
-  games: '🕹 Игры'
-  computers: '📟 Компьютеры'
 
 buttons:
   start: '📊 Старт!'
@@ -19,15 +12,6 @@ buttons:
   skip: 'Пропустить'
   stop: 'Остановить'
 
-keyboards:
-  menu:
-    - - start
-    - - stats
-  quiz:
-    - - skip
-    - - stop
-
-inline_buttons:
   privacy:
     unique: privacy
     text: |
@@ -77,19 +61,21 @@ inline_buttons:
     callback_data: ${.}
     text: '🇬🇧'
 
-inline_keyboards:
+markups:
+  menu: 
+    - [start]
+    - [stats]
+  quiz: 
+    - [skip]
+    - [stop]
   privacy:
-    - - privacy
+    - [privacy]
   categories:
-    - - general
-      - history
-    - - music
-      - books
-    - - games
-      - computers
-    - - random
+    - [general, history]
+    - [music, books]
+    - [games, computers]
+    - [random]
   moderation_en:
-    - - bad_quiz
-      - bad_answers
+    - [bad_quiz, bad_answers]
   moderation:
-    - - bad_quiz
+    - [bad_quiz]

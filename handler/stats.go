@@ -10,9 +10,7 @@ import (
 )
 
 func (h Handler) OnStats(c tele.Context) error {
-	if err := h.onStats(m); err != nil {
-		h.OnError(m, err)
-	}
+	return h.onStats(c)
 }
 
 func (h Handler) onStats(c tele.Context) error {
@@ -34,7 +32,7 @@ func (h Handler) onStats(c tele.Context) error {
 		return top[i].Rate() > top[j].Rate()
 	})
 
-	var chats []tb.Chat
+	var chats []tele.Chat
 	for _, t := range top {
 		chat, err := h.b.ChatByID(strconv.FormatInt(t.ID, 10))
 		if err != nil {
@@ -43,7 +41,7 @@ func (h Handler) onStats(c tele.Context) error {
 		chats = append(chats, *chat)
 	}
 
-	stats, err := h.db.Users.Stats(m.Sender.ID)
+	stats, err := h.db.Users.Stats(c.Sender().ID)
 	if err != nil {
 		return err
 	}
@@ -55,10 +53,7 @@ func (h Handler) onStats(c tele.Context) error {
 	}
 
 	return c.Send(
-		m.Chat,
-		h.b.Text("stats", statsx),
-		tb.ModeHTML,
+		h.lt.Text(c, "stats", statsx),
+		tele.ModeHTML,
 	)
-
-	return err
 }

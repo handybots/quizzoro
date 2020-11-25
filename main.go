@@ -6,14 +6,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/handybots/quizzoro/bot"
+	"github.com/demget/clickrus"
 	"github.com/handybots/quizzoro/handler"
 	"github.com/handybots/quizzoro/opentdb"
 	"github.com/handybots/quizzoro/storage"
 
-	"github.com/demget/clickrus"
 	"github.com/sirupsen/logrus"
 	tele "gopkg.in/tucnak/telebot.v3"
+	"gopkg.in/tucnak/telebot.v3/layout"
 )
 
 func main() {
@@ -31,25 +31,13 @@ func main() {
 	logrus.AddHook(hook)
 	logrus.SetOutput(os.Stdout)
 
-	tmpl := &tele.TemplateText{
-		Dir:        "data",
-		DelimLeft:  "${",
-		DelimRight: "}",
-	}
-
-	pref, err := tele.NewSettingsYAML("bot.yml", tmpl)
-	if err != nil {
-		log.Fatal(err)
-	}
-	pref.Token = os.Getenv("TOKEN")
-
-	b, err := tele.NewBot(pref)
+	lt, err := layout.New("bot.yml")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var conf bot.Config
-	if err := b.Vars(&conf); err != nil {
+	b, err := tele.NewBot(lt.Settings())
+	if err != nil {
 		log.Fatal(err)
 	}
 
@@ -67,27 +55,31 @@ func main() {
 	}
 
 	h := handler.New(handler.Config{
-		Conf: conf,
-		Bot:  b,
-		DB:   db,
-		TDB:  tdb,
+		Layout: lt,
+		Bot:    b,
+		DB:     db,
+		TDB:    tdb,
 	})
 
 	b.OnError = h.OnError
+	b.Use(lt.Middleware("ru", h.LocaleFunc))
 
 	b.Handle("/start", h.OnStart)
 	b.Handle("/settings", h.OnSettings)
 	b.Handle("/stop", h.OnStop)
 	b.Handle(tele.OnAddedToGroup, h.OnStart)
 	b.Handle(tele.OnPollAnswer, h.OnPollAnswer)
-	b.Handle(b.Button("start"), h.OnCategories)
-	b.Handle(b.Button("stats"), h.OnStats)
-	b.Handle(b.Button("skip"), h.OnSkip)
-	b.Handle(b.Button("stop"), h.OnStop)
-	b.Handle(b.InlineButton("privacy"), h.OnPrivacy)
-	b.Handle(b.InlineButton("category"), h.OnCategory)
-	b.Handle(b.InlineButton("bad_quiz"), h.OnBadQuiz)
-	b.Handle(b.InlineButton("bad_answers"), h.OnBadAnswers)
+	b.Handle(lt.Callback("privacy"), h.OnPrivacy)
+	b.Handle(lt.Callback("category"), h.OnCategory)
+	b.Handle(lt.Callback("bad_quiz"), h.OnBadQuiz)
+	b.Handle(lt.Callback("bad_answers"), h.OnBadAnswers)
+
+	for _, loc := range []string{"ru"} {
+		b.Handle(lt.ButtonLocale(loc, "start"), h.OnCategories)
+		b.Handle(lt.ButtonLocale(loc, "stats"), h.OnStats)
+		b.Handle(lt.ButtonLocale(loc, "skip"), h.OnSkip)
+		b.Handle(lt.ButtonLocale(loc, "stop"), h.OnStop)
+	}
 
 	// b.Poller = tele.NewMiddlewarePoller(b.Poller, h.Middleware) // todo:
 	b.Start()

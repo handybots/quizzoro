@@ -11,7 +11,7 @@ func (h Handler) OnBadQuiz(c tele.Context) error {
 }
 
 func (h Handler) onBadQuiz(c tele.Context) error {
-	if err := h.db.Polls.Delete(c.Data); err != nil {
+	if err := h.db.Polls.Delete(c.Data()); err != nil {
 		return err
 	}
 	return c.Delete()
@@ -22,7 +22,7 @@ func (h Handler) OnBadAnswers(c tele.Context) error {
 }
 
 func (h Handler) onBadAnswers(c tele.Context) error {
-	cached, err := h.db.Polls.ByID(c.Data)
+	cached, err := h.db.Polls.ByID(c.Data())
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (h Handler) onBadAnswers(c tele.Context) error {
 	}
 
 	_, err = h.b.EditReplyMarkup(msg,
-		h.b.InlineMarkup("moderation", msg.Poll.ID))
+		h.lt.Markup(c, "moderation", msg.Poll.ID))
 	if err != nil {
 		return err
 	}
@@ -60,5 +60,5 @@ func (h Handler) onBadAnswers(c tele.Context) error {
 		return err
 	}
 
-	return h.b.Delete(c.Message)
+	return c.Delete()
 }

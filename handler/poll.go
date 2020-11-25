@@ -9,10 +9,12 @@ import (
 )
 
 func (h Handler) OnPollAnswer(c tele.Context) error {
-	return h.onPollAnswer(c.PollAnswer())
+	return h.onPollAnswer(c)
 }
 
-func (h Handler) onPollAnswer(pa *tele.PollAnswer) error {
+func (h Handler) onPollAnswer(c tele.Context) error {
+	pa := c.PollAnswer()
+
 	if len(pa.Options) == 0 {
 		return nil
 	}
@@ -22,7 +24,7 @@ func (h Handler) onPollAnswer(pa *tele.PollAnswer) error {
 	)
 	user, err := h.db.Users.ByPollID(pa.PollID)
 	if err == sql.ErrNoRows {
-		chatID = int64(pa.User.ID)
+		chatID = int64(pa.Sender.ID)
 	} else if err == nil {
 		chatID = user.ID
 	} else {
@@ -62,9 +64,9 @@ func (h Handler) onPollAnswer(pa *tele.PollAnswer) error {
 		}
 	}
 	if fromGroup(chatID) {
-		return h.db.Users.AddPoll(int64(pa.User.ID), poll)
+		return h.db.Users.AddPoll(int64(pa.Sender.ID), poll)
 	}
 
 	tracker.Data.Del(chatID)
-	return h.sendQuiz(&pa.User, cache.LastCategory)
+	return h.sendQuiz(c, cache.LastCategory)
 }
