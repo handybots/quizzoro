@@ -37,7 +37,7 @@ func (h Handler) onStart(c tele.Context) error {
 	}
 
 	if err := c.Send(
-		h.lt.Text(c, "start", c.Chat),
+		h.lt.Text(c, "start", c.Chat()),
 		h.lt.Markup(c, "menu"),
 		tele.ModeHTML,
 	); err != nil {
