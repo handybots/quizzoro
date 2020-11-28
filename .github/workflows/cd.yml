@@ -1,0 +1,32 @@
+name: CD
+on:
+  push:
+    branches:
+      - master
+jobs:
+  build:
+    runs-on: [ubuntu-18.04]
+    name: Deploy
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
+
+      - name: Publish docker container
+        run: |
+          sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} docker.pkg.github.com
+          sudo docker build -t docker.pkg.github.com/handybots/quizzoro/quizzoro.
+          sudo docker push docker.pkg.github.com/handybots/quizzoro/quizzoro:latest
+
+      - name: Deploy
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script_stop: true
+          script: |
+            sudo docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_TOKEN }} docker.pkg.github.com
+            sudo docker pull docker.pkg.github.com/handybots/quizzoro/quizzoro:latest
+            sudo docker-compose up --remove-orphans -d
+            sudo docker-compose logs | tail -n 10

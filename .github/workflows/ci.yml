@@ -1,0 +1,38 @@
+name: CI
+on:
+  pull_request:
+    branches:
+      - master
+jobs:
+  build:
+#     services:
+#      db:
+#        image: mongo:4.1
+#        env:
+#          MONGO_INITDB_ROOT_USERNAME: tester
+#          MONGO_INITDB_ROOT_PASSWORD: tester
+    runs-on: [ubuntu-18.04]
+    name: Tests
+    steps:
+      - name: Set up Go 1.13
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.13
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@master
+
+      - name: Run golangci-lint
+        run: |
+          curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.21.0
+          ./bin/golangci-lint run ./...
+
+      - name: Test build
+        run: go build cmd/main.go
+
+#       - name: Go tests
+#         run: go test -v ./tests/
+#         env:
+#           HTTP_HOST: "[::]"
+#           DB_CONNECTION: "mongodb://tester:tester@db:27017"
