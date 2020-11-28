@@ -1,0 +1,5 @@
+.idea
+*.session
+__debug_bin
+.vscode
+bot.yml
