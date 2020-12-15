@@ -32,6 +32,9 @@ func Connect(url string) (*DB, error) {
 
 	db.Mapper = reflectx.NewMapperFunc("db", toSnakeCase)
 
+	db.SetMaxIdleConns(100)
+	db.SetMaxOpenConns(100)
+
 	return &DB{
 		DB:    db,
 		Users: &UsersTable{DB: db},

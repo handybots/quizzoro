@@ -127,15 +127,11 @@ func (s Session) Trivia(category int) (*Trivia, error) {
 }
 
 func (s Session) pingWorker(d time.Duration) {
-	const url = "https://opentdb.com/api_category.php"
-
 	t := time.NewTicker(d)
 	for range t.C {
-		resp, err := http.DefaultClient.Get(url)
+		_, err := s.Trivia(9)
 		if err != nil {
 			log.Println(err)
-		} else {
-			resp.Body.Close()
 		}
 	}
 }
