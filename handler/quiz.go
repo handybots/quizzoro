@@ -7,6 +7,7 @@ import (
 	"log"
 	"strconv"
 	"time"
+	"unicode"
 
 	"github.com/handybots/quizzoro/storage"
 	tele "gopkg.in/tucnak/telebot.v3"
@@ -40,10 +41,6 @@ func (h handler) OnSkip(c tele.Context) error {
 		MessageID: cache.LastMessageID,
 		ChatID:    to.ID,
 	})
-
-	if c.Message().FromGroup() {
-		return nil
-	}
 
 	return h.sendQuiz(c, cache.LastCategory)
 }
@@ -127,22 +124,25 @@ func (h handler) sendQuiz(c tele.Context, category string) error {
 			moderation = "moderation_en"
 		)
 
-		shuffleStrings(poll.AnswersEng)
 		if len(poll.AnswersEng) > 2 { // opentdb.Multiple
+			shuffleStrings(poll.AnswersEng)
 			for i, a := range poll.AnswersEng {
 				if a == poll.CorrectEng {
 					correct = i
 				}
 
-				// Just in case.
-				time.Sleep(500 * time.Millisecond)
+				if i != 0 {
+					time.Sleep(500 * time.Millisecond)
+				}
 
 				tr, err := translateText(a)
 				if err != nil {
 					return err
 				}
 
-				answers[i] = tr
+				rs := []rune(tr)
+				rs[0] = unicode.ToUpper(rs[0])
+				answers[i] = string(rs)
 			}
 		} else { // opentdb.TrueFalse
 			moderation = "moderation"
@@ -162,9 +162,9 @@ func (h handler) sendQuiz(c tele.Context, category string) error {
 			return err
 		}
 
-		_, err = h.b.EditReplyMarkup(msg, h.lt.Markup(c, moderation, msg.Poll.ID))
+		_, err = h.b.EditReplyMarkup(msg, h.lt.MarkupLocale("ru", moderation, msg.Poll.ID))
 		if err != nil {
-			return err
+			h.OnError(err, c)
 		}
 
 		poll.PollID = msg.Poll.ID
@@ -193,6 +193,7 @@ func (h handler) sendQuiz(c tele.Context, category string) error {
 			answers = poll.Answers
 			correct = poll.Correct
 		}
+
 		correct := shuffleWithCorrect(answers, correct)
 		msg, err = h.sendPoll(to, poll.Question, answers, correct)
 	} else {
