@@ -3,8 +3,29 @@ settings:
   parse_mode: html
 
 config:
-  quizzes_chat: -423111143
-  open_period: 20
+  quizzes_chat: -485229751
+  open_period: 20s
+  true_false: [ 'Правда', 'Ложь' ]
+
+  categories:
+    general:        # Σ(565)
+      - general     #  299
+      - books       #  92
+      - animals     #  74
+      - vehicles    #  71
+      - art         #  29
+    world:          # Σ(867)
+      - history     #  306
+      - geography   #  274
+      - science     #  229
+      - politics    #  58
+    games:          # Σ(990)
+      - games       #  990
+    film:           # Σ(679)
+      - film        #  240
+      - anime       #  185
+      - television  #  167
+      - cartoon     #  87
 
 buttons:
   start: '📊 Старт!'
@@ -15,66 +36,56 @@ buttons:
   privacy:
     unique: privacy
     text: |
-      ${- if . -}
+      {{- if . -}}
       Отключить анонимность
-      ${- else -}
+      {{- else -}}
       Остаться анонимным
-      ${- end -}
+      {{- end -}}
 
   category:
     unique: category
   general:
     unique: category
     callback_data: general
-    text: '🌍 Общее'
-  history:
+    text: 'Общее'
+  world:
     unique: category
-    callback_data: history
-    text: '📜 История'
-  music:
-    unique: category
-    callback_data: music
-    text: '🎹 Музыка'
-  books:
-    unique: category
-    callback_data: books
-    text: '📚 Книги'
+    callback_data: world
+    text: 'Мир'
   games:
     unique: category
     callback_data: games
-    text: '🕹 Игры'
-  computers:
+    text: 'Игры'
+  film:
     unique: category
-    callback_data: computers
-    text: '📟 Компьютеры'
+    callback_data: film
+    text: 'Фильмы'
   random:
     unique: category
     callback_data: random
-    text: '🎲 Случайная'
+    text: 'Случайная'
 
   bad_quiz:
     unique: bad_quiz
-    callback_data: ${.}
+    callback_data: '{{.}}'
     text: 'Удалить'
   bad_answers:
     unique: bad_answers
-    callback_data: ${.}
+    callback_data: '{{.}}'
     text: '🇬🇧'
 
 markups:
-  menu: 
+  menu:
     - [start]
     - [stats]
-  quiz: 
+  quiz:
     - [skip]
     - [stop]
   privacy:
     - [privacy]
   categories:
-    - [general, history]
-    - [music, books]
-    - [games, computers]
-    - [random]
+    - [general, world]
+    - [film, games]
   moderation_en:
     - [bad_quiz, bad_answers]
   moderation:

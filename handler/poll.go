@@ -3,25 +3,20 @@ package handler
 import (
 	"database/sql"
 
-	"github.com/handybots/quizzoro/handler/tracker"
 	"github.com/handybots/quizzoro/storage"
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnPollAnswer(c tele.Context) error {
-	return h.onPollAnswer(c)
-}
-
-func (h Handler) onPollAnswer(c tele.Context) error {
-	pa := c.PollAnswer()
+func (h handler) OnPollAnswer(c tele.Context) error {
+	var (
+		pa     = c.PollAnswer()
+		chatID int64
+	)
 
 	if len(pa.Options) == 0 {
 		return nil
 	}
 
-	var (
-		chatID int64
-	)
 	user, err := h.db.Users.ByPollID(pa.PollID)
 	if err == sql.ErrNoRows {
 		chatID = int64(pa.Sender.ID)
@@ -60,13 +55,13 @@ func (h Handler) onPollAnswer(c tele.Context) error {
 	}
 	if !has {
 		if err := h.db.Users.AddPoll(chatID, poll); err != nil {
-			return err
+			h.OnError(err, c)
 		}
 	}
+
 	if fromGroup(chatID) {
 		return h.db.Users.AddPoll(int64(pa.Sender.ID), poll)
 	}
 
-	tracker.Data.Del(chatID)
 	return h.sendQuiz(c, cache.LastCategory)
 }

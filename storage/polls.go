@@ -7,12 +7,13 @@ import (
 )
 
 type PollsStorage interface {
-	ByID(id string) (Poll, error)
+	ByID(pollID string) (Poll, error)
 	Create(poll Poll) error
-	Delete(id string) error
+	Update(poll Poll) error
+	Delete(pollID string) error
 	ByQuestion(category, question string) (Poll, error)
-	CorrectAnswer(id string) (int, error)
-	Available(userID int64, category string) (Poll, error)
+	CorrectAnswer(id int) (int, error)
+	Available(userID int64, categories []string) (Poll, error)
 }
 
 type PollsTable struct {
@@ -21,7 +22,9 @@ type PollsTable struct {
 
 type Poll struct {
 	Model       `sq:"-"`
-	ID          string  `sq:"id,omitempty"`
+	Deleted     bool    `sq:"deleted,omitempty"`
+	ID          int     `sq:"id,omitempty"`
+	PollID      string  `sq:"poll_id,omitempty"`
 	MessageID   string  `sq:"message_id,omitempty"`
 	ChatID      int64   `sq:"chat_id,omitempty"`
 	Category    string  `sq:"category,omitempty"`
@@ -41,14 +44,14 @@ func (q Poll) MessageSig() (string, int64) {
 
 type PassedPoll struct {
 	Model   `sq:"-"`
-	UserID  int    `sq:"user_id,omitempty"`
-	PollID  string `sq:"poll_id,omitempty"`
-	Correct bool   `sq:"correct,omitempty"`
+	UserID  int  `sq:"user_id,omitempty"`
+	PollID  int  `sq:"poll_id,omitempty"`
+	Correct bool `sq:"correct,omitempty"`
 }
 
 type PassedPolls []PassedPoll
 
-func (polls PassedPolls) Contains(pollID string) bool {
+func (polls PassedPolls) Contains(pollID int) bool {
 	for _, p := range polls {
 		if p.PollID == pollID {
 			return true
@@ -57,9 +60,9 @@ func (polls PassedPolls) Contains(pollID string) bool {
 	return false
 }
 
-func (db *PollsTable) ByID(id string) (poll Poll, _ error) {
-	const q = `SELECT * FROM polls WHERE id=?`
-	return poll, db.Get(&poll, q, id)
+func (db *PollsTable) ByID(pollID string) (poll Poll, _ error) {
+	const q = `SELECT * FROM polls WHERE poll_id=?`
+	return poll, db.Get(&poll, q, pollID)
 }
 
 func (db *PollsTable) Create(poll Poll) error {
@@ -75,9 +78,23 @@ func (db *PollsTable) Create(poll Poll) error {
 	return err
 }
 
-func (db *PollsTable) Delete(id string) error {
-	const q = `DELETE FROM polls WHERE id=?`
-	_, err := db.Exec(q, id)
+func (db *PollsTable) Update(poll Poll) error {
+	q, args, err := sq.
+		Update("polls").
+		SetMap(structs.Map(poll)).
+		Where("id=?", poll.ID).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	_, err = db.Exec(q, args...)
+	return err
+}
+
+func (db *PollsTable) Delete(pollID string) error {
+	const q = `UPDATE polls SET deleted=1 WHERE poll_id=?`
+	_, err := db.Exec(q, pollID)
 	return err
 }
 
@@ -86,7 +103,7 @@ func (db *PollsTable) ByQuestion(category, question string) (poll Poll, _ error)
 	return poll, db.Get(&poll, q, category, question)
 }
 
-func (db *PollsTable) CorrectAnswer(id string) (int, error) {
+func (db *PollsTable) CorrectAnswer(id int) (int, error) {
 	const q = `SELECT correct_eng, answers_eng FROM polls WHERE id=?`
 
 	var poll Poll
@@ -105,23 +122,18 @@ func (db *PollsTable) CorrectAnswer(id string) (int, error) {
 	return correct, nil
 }
 
-func (db *PollsTable) Available(userID int64, category string) (poll Poll, _ error) {
+func (db *PollsTable) Available(userID int64, categories []string) (poll Poll, _ error) {
 	const q = `
-		SELECT * FROM polls WHERE category=:category
-		AND id != (SELECT orig_poll_id FROM users WHERE id=:user_id)
-		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=:user_id)
-		ORDER BY RAND() LIMIT 1`
+ 		SELECT * FROM polls
+ 		WHERE category IN (?) AND deleted=0
+		AND id != (SELECT orig_poll_id FROM users WHERE id=?)
+		AND id NOT IN (SELECT poll_id FROM passed_polls WHERE user_id=?)
+		ORDER BY poll_id DESC, RAND() LIMIT 1`
 
-	stmt, err := db.PrepareNamed(q)
+	query, args, err := sqlx.In(q, categories, userID, userID)
 	if err != nil {
 		return poll, err
 	}
 
-	return poll, stmt.Get(&poll, struct {
-		Category string
-		UserID   int64
-	}{
-		Category: category,
-		UserID:   userID,
-	})
+	return poll, db.Get(&poll, query, args...)
 }

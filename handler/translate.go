@@ -21,7 +21,7 @@ import (
 // }
 
 func translateText(input string) (output string, err error) {
-	output, err = translate.MyMemory.Translate("en", "ru", input)
+	output, err = translate.JustTranslate.Translate("en", "ru", input)
 	if err == nil {
 		return output, nil
 	}

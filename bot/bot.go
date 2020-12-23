@@ -1,16 +1,9 @@
 package bot
 
 import (
-	"time"
-
-	tele "gopkg.in/tucnak/telebot.v3"
 	"github.com/handybots/quizzoro/storage"
+	tele "gopkg.in/tucnak/telebot.v3"
 )
-
-type Config struct {
-	QuizzesChat tele.ChatID     `json:"quizzes_chat"`
-	OpenPeriod  time.Duration `json:"open_period"`
-}
 
 type Random struct {
 	Value    int

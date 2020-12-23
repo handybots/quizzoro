@@ -9,11 +9,11 @@ import (
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnStats(c tele.Context) error {
+func (h handler) OnStats(c tele.Context) error {
 	return h.onStats(c)
 }
 
-func (h Handler) onStats(c tele.Context) error {
+func (h handler) onStats(c tele.Context) error {
 	top, err := h.db.Users.TopStats()
 	if err != nil {
 		return err

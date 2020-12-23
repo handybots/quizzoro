@@ -2,6 +2,7 @@ package opentdb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
 	"io/ioutil"
@@ -29,7 +30,15 @@ type Trivia struct {
 	IncorrectAnswers []string `json:"incorrect_answers"`
 }
 
-// Load loads session from disk, if it exists, or else creates a new one.
+type Stats struct {
+	Category    int
+	TotalCount  int `json:"total_question_count"`
+	EasyCount   int `json:"total_easy_question_count"`
+	MediumCount int `json:"total_medium_question_count"`
+	HardCount   int `json:"total_hard_question_count"`
+}
+
+// Load loads session from disk, if it exists, otherwise creates a new one.
 // Use Load() instead of New() to automatically save created session.
 func Load() (*Session, error) {
 	const path = "opentdb.session"
@@ -51,7 +60,7 @@ func Load() (*Session, error) {
 	}
 
 	session := &Session{token: string(data)}
-	go session.pingWorker(time.Hour)
+	go session.startPingWorker(time.Hour)
 	return session, nil
 }
 
@@ -83,15 +92,45 @@ func New() (*Session, error) {
 	}
 
 	session := &Session{token: result.Token}
-	go session.pingWorker(time.Hour)
+	go session.startPingWorker(time.Hour)
 	return session, nil
 }
 
+func (s Session) Stats(category int) (*Stats, error) {
+	const url = "https://opentdb.com/api_count.php?category=%d"
+
+	resp, err := http.DefaultClient.Get(fmt.Sprintf(url, category))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result struct {
+		Stats Stats `json:"category_question_count"`
+	}
+	if err := json.Unmarshal(data, &result); err != nil {
+		return nil, err
+	}
+
+	result.Stats.Category = category
+	return &result.Stats, nil
+}
+
 func (s Session) Trivia(category int) (*Trivia, error) {
-	const (
-		url    = "https://opentdb.com/api.php?amount=%d&category=%d&token=%s"
-		amount = 1
-	)
+	trivias, err := s.Trivias(category, 1)
+	if err != nil {
+		return nil, err
+	}
+	return &trivias[0], nil
+}
+
+func (s Session) Trivias(category, amount int) ([]Trivia, error) {
+	const url = "https://opentdb.com/api.php?amount=%d&category=%d&token=%s"
 
 	resp, err := http.DefaultClient.Get(fmt.Sprintf(url, amount, category, s.token))
 	if err != nil {
@@ -114,28 +153,30 @@ func (s Session) Trivia(category int) (*Trivia, error) {
 	if result.Code != 0 {
 		return nil, fmt.Errorf("opentdb: response code is %d", result.Code)
 	}
-
-	trivia := result.Trivia[0]
-	trivia.Question = html.UnescapeString(trivia.Question)
-	trivia.CorrectAnswer = html.UnescapeString(trivia.CorrectAnswer)
-
-	for i, a := range trivia.IncorrectAnswers {
-		trivia.IncorrectAnswers[i] = html.UnescapeString(a)
+	if len(result.Trivia) == 0 {
+		return nil, errors.New("opentdb: no trivia was found")
 	}
 
-	return &trivia, nil
+	for i, trivia := range result.Trivia {
+		trivia.Question = html.UnescapeString(trivia.Question)
+		trivia.CorrectAnswer = html.UnescapeString(trivia.CorrectAnswer)
+
+		for i, a := range trivia.IncorrectAnswers {
+			trivia.IncorrectAnswers[i] = html.UnescapeString(a)
+		}
+
+		result.Trivia[i] = trivia
+	}
+
+	return result.Trivia, nil
 }
 
-func (s Session) pingWorker(d time.Duration) {
-	const url = "https://opentdb.com/api_category.php"
-
+func (s Session) startPingWorker(d time.Duration) {
 	t := time.NewTicker(d)
 	for range t.C {
-		resp, err := http.DefaultClient.Get(url)
+		_, err := s.Trivia(9) // general
 		if err != nil {
-			log.Println(err)
-		} else {
-			resp.Body.Close()
+			log.Println("opentdb/ping:", err)
 		}
 	}
 }

@@ -24,7 +24,7 @@ type UsersStorage interface {
 	InvertPrivacy(id int64) (bool, error)
 	Cache(id int64) (UserCache, error)
 	AddPoll(id int64, poll PassedPoll) error
-	HasPoll(id int64, pollID string) (bool, error)
+	HasPoll(id int64, pollID int) (bool, error)
 	TopStats() ([]UserStats, error)
 	Stats(id int) (UserStats, error)
 }
@@ -43,8 +43,8 @@ type User struct {
 }
 
 type UserCache struct {
-	OrigPollID    string `sq:"orig_poll_id,omitempty"`
-	LastPollID    string `sq:"last_poll_id,omitempty"`
+	OrigPollID    int    `sq:"orig_poll_id,omitempty"` // Internal ID
+	LastPollID    string `sq:"last_poll_id,omitempty"` // Telegram ID
 	LastMessageID string `sq:"last_message_id,omitempty"`
 	LastCategory  string `sq:"last_category,omitempty"`
 }
@@ -129,7 +129,7 @@ func (db *UsersTable) AddPoll(id int64, poll PassedPoll) error {
 	return err
 }
 
-func (db *UsersTable) HasPoll(id int64, pollID string) (has bool, _ error) {
+func (db *UsersTable) HasPoll(id int64, pollID int) (has bool, _ error) {
 	const q = `SELECT EXISTS(
     	SELECT 1 FROM passed_polls 
     	WHERE user_id=? AND poll_id=?

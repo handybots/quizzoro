@@ -22,7 +22,8 @@ func (srv *DeepLService) Translate(from, to, text string) (string, error) {
 	params.Set("target_lang", to)
 	params.Set("text", text)
 
-	req, err := http.NewRequest(http.MethodPost,
+	req, err := http.NewRequest(
+		http.MethodPost,
 		"https://api.deepl.com/v2/translate?auth_key="+srv.key,
 		strings.NewReader(params.Encode()))
 	if err != nil {

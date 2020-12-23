@@ -7,13 +7,6 @@ import (
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-// randCategory returns random opentdb category code
-// by given string alias.
-func randCategory(s string) int {
-	category := categories[s]
-	return category[rand.Intn(len(category))]
-}
-
 // shuffleStrings shuffles slice of strings in one line.
 func shuffleStrings(s []string) {
 	rand.Shuffle(len(s), func(i, j int) {
@@ -42,6 +35,7 @@ func parseChatID(to tele.Recipient) (n int64) {
 
 // fromGroup checks if the given Recipient or chat ID is negative.
 // Supports int64 and tb.Recipient, in other cases, returns false.
+// TODO: Replace with c.Message().FromGroup()
 func fromGroup(to interface{}) bool {
 	switch to := to.(type) {
 	case int64:

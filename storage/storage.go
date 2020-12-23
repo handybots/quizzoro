@@ -24,7 +24,7 @@ type DB struct {
 	Polls PollsStorage
 }
 
-func Connect(url string) (*DB, error) {
+func Open(url string) (*DB, error) {
 	db, err := sqlx.Open("mysql", url)
 	if err != nil {
 		return nil, err

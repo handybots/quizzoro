@@ -2,33 +2,20 @@ package handler
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
+	"log"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/handybots/quizzoro/bot"
-	"github.com/handybots/quizzoro/opentdb"
 	"github.com/handybots/quizzoro/storage"
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnSkip(c tele.Context) error {
-	return h.onSkip(c)
-}
+func (h handler) OnSkip(c tele.Context) error {
+	to := c.Chat()
 
-func (h Handler) OnStop(c tele.Context) error {
-	return h.onStop(c)
-}
-
-func (h Handler) onSkip(c tele.Context) error {
-	m := c.Message()
-
-	if m.FromGroup() {
-		return nil
-	}
-
-	state, err := h.db.Users.State(m.Chat.ID)
+	state, err := h.db.Users.State(to.ID)
 	if err != nil {
 		return err
 	}
@@ -36,23 +23,35 @@ func (h Handler) onSkip(c tele.Context) error {
 		return h.sendNotStarted(c)
 	}
 
-	cache, err := h.db.Users.Cache(m.Chat.ID)
+	cache, err := h.db.Users.Cache(to.ID)
 	if err != nil {
 		return err
 	}
 
+	has, err := h.db.Users.HasPoll(to.ID, cache.OrigPollID)
+	if err != nil {
+		return err
+	}
+	if has {
+		return nil
+	}
+
 	_ = h.b.Delete(tele.StoredMessage{
 		MessageID: cache.LastMessageID,
-		ChatID:    m.Chat.ID,
+		ChatID:    to.ID,
 	})
+
+	if c.Message().FromGroup() {
+		return nil
+	}
 
 	return h.sendQuiz(c, cache.LastCategory)
 }
 
-func (h Handler) onStop(c tele.Context) error {
-	m := c.Message()
+func (h handler) OnStop(c tele.Context) error {
+	to := c.Chat()
 
-	state, err := h.db.Users.State(m.Chat.ID)
+	state, err := h.db.Users.State(to.ID)
 	if err != nil {
 		return err
 	}
@@ -60,40 +59,44 @@ func (h Handler) onStop(c tele.Context) error {
 		return h.sendNotStarted(c)
 	}
 
-	cache, err := h.db.Users.Cache(m.Chat.ID)
+	cache, err := h.db.Users.Cache(to.ID)
 	if err != nil {
 		return err
 	}
 
-	_ = h.b.Delete(tele.StoredMessage{
+	h.b.Delete(tele.StoredMessage{
 		MessageID: cache.LastMessageID,
-		ChatID:    m.Chat.ID,
+		ChatID:    to.ID,
 	})
 
-	if err := c.Send(
-		h.lt.Text(c, "start", m.Chat),
-		h.lt.Markup(c, "menu"),
-		tele.ModeHTML,
-	); err != nil {
+	if err := h.sendNotStarted(c); err != nil {
 		return err
 	}
 
-	return h.db.Users.Update(m.Chat.ID, storage.User{
+	return h.db.Users.Update(to.ID, storage.User{
 		State: storage.StateDefault,
 	})
 }
 
-func (h Handler) sendNotStarted(c tele.Context) error {
-	return c.Send(
-		h.lt.Text(c, "not_started"),
-		h.lt.Markup(c, "menu"),
+func (h handler) sendNotStarted(c tele.Context) error {
+	_, err := h.b.Send(
+		c.Chat(),
+		h.lt.TextLocale("ru", "not_started"),
+		h.menuMarkup(c),
 		tele.ModeHTML,
 	)
+	return err
 }
 
-func (h Handler) sendQuiz(c tele.Context, category string) error {
+func (h handler) sendQuiz(c tele.Context, category string) error {
+	var to tele.Recipient
+	if c.PollAnswer() != nil {
+		to = c.Sender()
+	} else {
+		to = c.Chat()
+	}
+
 	var (
-		to      = c.Recipient()
 		chatID  = parseChatID(to)
 		privacy = true
 	)
@@ -106,131 +109,94 @@ func (h Handler) sendQuiz(c tele.Context, category string) error {
 		privacy = p
 	}
 
-	avail, err := h.db.Polls.Available(chatID, category)
-	if err == nil {
-		var (
-			msg     *tele.Message
-			answers []string
-			correct string
-		)
-		if privacy {
-			if avail.IsEng {
-				answers = avail.AnswersEng
-				correct = avail.CorrectEng
-			} else {
-				answers = avail.Answers
-				correct = avail.Correct
-			}
-			correct := shuffleWithCorrect(answers, correct)
-			msg, err = h.sendPoll(to, avail.Question, answers, correct)
+	categories := h.lt.Get("categories").Strings(category)
+	poll, err := h.db.Polls.Available(chatID, categories)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// TODO: No polls available
+			return nil
 		} else {
-			msg, err = h.b.Forward(to, avail)
+			return err
 		}
+	}
+
+	if poll.PollID == "" {
+		var (
+			correct    int
+			answers    = make([]string, len(poll.AnswersEng))
+			moderation = "moderation_en"
+		)
+
+		shuffleStrings(poll.AnswersEng)
+		if len(poll.AnswersEng) > 2 { // opentdb.Multiple
+			for i, a := range poll.AnswersEng {
+				if a == poll.CorrectEng {
+					correct = i
+				}
+
+				// Just in case.
+				time.Sleep(500 * time.Millisecond)
+
+				tr, err := translateText(a)
+				if err != nil {
+					return err
+				}
+
+				answers[i] = tr
+			}
+		} else { // opentdb.TrueFalse
+			moderation = "moderation"
+			answers = h.lt.Strings("true_false")
+			if poll.CorrectEng == "False" {
+				correct = 1
+			}
+		}
+
+		question, err := translateText(poll.QuestionEng)
 		if err != nil {
 			return err
 		}
 
-		if fromGroup(chatID) {
-			h.prepareGroupPoll(c)
+		msg, err := h.sendPoll(h.lt.ChatID("quizzes_chat"), question, answers, correct)
+		if err != nil {
+			return err
 		}
 
-		cache := storage.UserCache{
-			OrigPollID:    avail.ID,
-			LastPollID:    msg.Poll.ID,
-			LastMessageID: strconv.Itoa(msg.ID),
-			LastCategory:  category,
+		_, err = h.b.EditReplyMarkup(msg, h.lt.Markup(c, moderation, msg.Poll.ID))
+		if err != nil {
+			return err
 		}
-		return h.db.Users.Update(chatID, storage.User{
-			State:     storage.StateQuiz,
-			UserCache: cache,
-		})
-	}
-	if err != sql.ErrNoRows {
-		return err
-	}
 
-TRIVIA:
-	trivia, err := h.tdb.Trivia(randCategory(category))
-	if err != nil {
-		return err
-	}
+		poll.PollID = msg.Poll.ID
+		poll.MessageID = strconv.Itoa(msg.ID)
+		poll.ChatID = h.lt.Int64("quizzes_chat")
+		poll.Question = question
+		poll.Answers = answers
+		poll.Correct = answers[correct]
 
-	_, err = h.db.Polls.ByQuestion(category, trivia.Question)
-	if err == nil {
-		goto TRIVIA
-	}
-	if err != sql.ErrNoRows {
-		return err
+		if err := h.db.Polls.Update(poll); err != nil {
+			return err
+		}
 	}
 
 	var (
-		correct    int
-		answers    []string
-		moderation = "moderation_en"
+		msg     *tele.Message
+		answers []string
+		correct string
 	)
 
-	if trivia.Type == opentdb.Multiple {
-		answers = []string{trivia.CorrectAnswer}
-		answers = append(answers, trivia.IncorrectAnswers...)
-		shuffleStrings(answers)
-
-		for i, a := range answers {
-			if a == trivia.CorrectAnswer {
-				correct = i
-			}
-
-			tr, err := translateText(a)
-			if err != nil {
-				return err
-			}
-
-			answers[i] = strings.Title(tr)
-		}
-	} else {
-		moderation = "moderation"
-		answers = bot.TrueFalseAnswers
-		if trivia.CorrectAnswer == "False" {
-			correct = 1
-		}
-	}
-
-	question, err := translateText(trivia.Question)
-	if err != nil {
-		return err
-	}
-
-	msg, err := h.sendPoll(h.conf.QuizzesChat, question, answers, correct)
-	if err != nil {
-		return err
-	}
-
-	pollID := msg.Poll.ID
-	_, err = h.b.EditReplyMarkup(msg, h.lt.Markup(c, moderation, pollID))
-	if err != nil {
-		return err
-	}
-
-	poll := storage.Poll{
-		ID:          pollID,
-		MessageID:   strconv.Itoa(msg.ID),
-		ChatID:      int64(h.conf.QuizzesChat),
-		Category:    category,
-		Difficulty:  trivia.Difficulty,
-		Question:    question,
-		Correct:     answers[correct],
-		Answers:     answers,
-		QuestionEng: trivia.Question,
-		CorrectEng:  trivia.CorrectAnswer,
-		AnswersEng:  append(trivia.IncorrectAnswers, trivia.CorrectAnswer),
-	}
-	if err := h.db.Polls.Create(poll); err != nil {
-		return err
-	}
-
 	if privacy {
-		msg, err = h.sendPoll(to, question, answers, correct)
+		if poll.IsEng {
+			answers = poll.AnswersEng
+			correct = poll.CorrectEng
+		} else {
+			answers = poll.Answers
+			correct = poll.Correct
+		}
+		correct := shuffleWithCorrect(answers, correct)
+		msg, err = h.sendPoll(to, poll.Question, answers, correct)
 	} else {
-		msg, err = h.b.Forward(to, msg)
+		msg, err = h.b.Forward(to, poll)
 	}
 	if err != nil {
 		return err
@@ -241,59 +207,69 @@ TRIVIA:
 	}
 
 	cache := storage.UserCache{
-		OrigPollID:    pollID,
+		OrigPollID:    poll.ID,
 		LastPollID:    msg.Poll.ID,
 		LastMessageID: strconv.Itoa(msg.ID),
 		LastCategory:  category,
 	}
+
 	return h.db.Users.Update(chatID, storage.User{
 		State:     storage.StateQuiz,
 		UserCache: cache,
 	})
 }
 
-func (h Handler) sendPoll(to tele.Recipient, q string, a []string, i int) (*tele.Message, error) {
+func (h handler) sendPoll(to tele.Recipient, q string, a []string, i int) (*tele.Message, error) {
 	poll := &tele.Poll{
 		Type:          tele.PollQuiz,
 		CorrectOption: i,
 		Question:      q,
 	}
 
-	if to != h.conf.QuizzesChat && fromGroup(to) {
-		poll.OpenPeriod = int(h.conf.OpenPeriod)
+	if to != h.lt.ChatID("quizzes_chat") && fromGroup(to) {
+		poll.OpenPeriod = int(h.lt.Duration("open_period").Seconds())
 	}
 
 	poll.AddOptions(a...)
 	return h.b.Send(to, poll)
 }
 
-func (h Handler) prepareGroupPoll(c tele.Context) {
-	to := c.Recipient()
-	chatID := parseChatID(to)
+func (h handler) prepareGroupPoll(c tele.Context) {
+	var (
+		to     = c.Chat()
+		chatID = parseChatID(to)
+		stop   = errors.New("stop")
+	)
 
 	f := func() error {
-		cache, err := h.db.Users.Cache(chatID)
+		user, err := h.db.Users.ByID(chatID)
 		if err != nil {
 			return err
 		}
+		if user.State == storage.StateDefault {
+			return stop
+		}
 
-		has, err := h.db.Users.HasPoll(chatID, cache.OrigPollID)
+		has, err := h.db.Users.HasPoll(chatID, user.OrigPollID)
 		if err != nil {
 			return err
 		}
 		if !has {
+			if err := h.sendNotStarted(c); err != nil {
+				return err
+			}
 			return h.db.Users.Update(chatID, storage.User{
 				State: storage.StateDefault,
 			})
 		}
 
-		return h.sendQuiz(c, cache.LastCategory)
+		return h.sendQuiz(c, user.LastCategory)
 	}
 
-	// todo: repair conf
-	time.AfterFunc(h.conf.OpenPeriod*time.Second, func() {
-		if err := f(); err != nil {
-			h.OnError(fmt.Errorf("sendGroupPoll(%d)", chatID), c)
+	time.AfterFunc(h.lt.Duration("open_period"), func() {
+		log.Println(chatID, "sendGroupPoll: next poll")
+		if err := f(); err != nil && err != stop {
+			h.OnError(fmt.Errorf("sendGroupPoll: %v", err), c)
 		}
 	})
 }

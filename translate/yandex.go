@@ -15,11 +15,7 @@ import (
 )
 
 type YandexService struct {
-	sid *atomic.String
-
-	urlSID       string
-	urlAPI       string
-	apiTranslate string
+	sid atomic.String
 }
 
 func (srv *YandexService) Translate(from, to, text string) (string, error) {
@@ -34,8 +30,9 @@ func (srv *YandexService) Translate(from, to, text string) (string, error) {
 	params.Set("reason", "auto")
 	params.Set("format", "text")
 
-	req, err := http.NewRequest(http.MethodPost,
-		srv.apiTranslate+"?"+params.Encode(),
+	req, err := http.NewRequest(
+		http.MethodPost,
+		"https://translate.yandex.net/api/v1/tr.json/translate?"+params.Encode(),
 		strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", err
@@ -79,7 +76,7 @@ var (
 )
 
 func (srv *YandexService) UpdateSID() error {
-	req, err := http.NewRequest(http.MethodGet, srv.urlSID, nil)
+	req, err := http.NewRequest(http.MethodGet, "https://translate.yandex.ru", nil)
 	if err != nil {
 		return err
 	}

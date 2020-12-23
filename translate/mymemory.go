@@ -17,7 +17,8 @@ func (srv *MyMemoryService) Translate(from, to, text string) (string, error) {
 	params.Set("q", text)
 	params.Set("langpair", from+"|"+to)
 
-	req, err := http.NewRequest(http.MethodPost,
+	req, err := http.NewRequest(
+		http.MethodPost,
 		"https://api.mymemory.translated.net/get?"+params.Encode(),
 		nil)
 	if err != nil {

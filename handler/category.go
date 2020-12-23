@@ -6,32 +6,12 @@ import (
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-var categories = map[string][]int{
-	"general":   {9},
-	"history":   {23},
-	"music":     {12},
-	"books":     {10},
-	"games":     {15, 16},
-	"computers": {18, 30},
-	"random":    {-1},
-}
-
-var categoryOrder = []string{
-	"general",
-	"history",
-	"music",
-	"books",
-	"games",
-	"computers",
-	"random",
-}
-
-func (h Handler) OnCategory(c tele.Context) error {
+func (h handler) OnCategory(c tele.Context) error {
 	defer h.b.Respond(c.Callback())
 	return h.onCategory(c)
 }
 
-func (h Handler) onCategory(c tele.Context) error {
+func (h handler) onCategory(c tele.Context) error {
 	state, err := h.db.Users.State(c.Message().Chat.ID)
 	if err != nil {
 		return err
@@ -40,23 +20,29 @@ func (h Handler) onCategory(c tele.Context) error {
 		return nil
 	}
 
-	_ = c.Delete()
+	if err := c.Delete(); err != nil {
+		return err
+	}
 
 	category := c.Data()
 	if category == "random" {
-		msg, err := h.b.Send(c.Message().Chat, tele.Cube)
+		// TODO: Is not working now.
+
+		msg, err := h.b.Send(c.Chat(), tele.Cube)
 		if err != nil {
 			return err
 		}
 
 		// dice value is 1-6
-		category = categoryOrder[msg.Dice.Value-1]
+		// category = categoryOrder[msg.Dice.Value-1]
 
 		r := bot.Random{
 			Value:    msg.Dice.Value,
-			Category: h.lt.String(category),
+			Category: h.lt.Text(c, category),
 		}
-		if err := c.Send(
+
+		if _, err := h.b.Send(
+			c.Chat(),
 			h.lt.Text(c, "random", r),
 			h.lt.Markup(c, "quiz"),
 			tele.ModeHTML,
@@ -64,10 +50,15 @@ func (h Handler) onCategory(c tele.Context) error {
 			return err
 		}
 	} else {
-		if err := c.Send(
-			h.lt.Text(c, "chosen", h.lt.String(category)),
-			h.lt.Markup(c, "quiz"),
-			tele.ModeHTML,
+		var markup *tele.ReplyMarkup
+		if !c.Message().FromGroup() {
+			markup = h.lt.Markup(c, "quiz")
+		}
+
+		if _, err := h.b.Send(
+			c.Chat(),
+			h.lt.Text(c, "chosen", category),
+			markup, tele.ModeHTML,
 		); err != nil {
 			return err
 		}

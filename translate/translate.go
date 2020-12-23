@@ -2,8 +2,6 @@ package translate
 
 import (
 	"os"
-
-	"go.uber.org/atomic"
 )
 
 type Translator interface {
@@ -11,16 +9,15 @@ type Translator interface {
 }
 
 var (
-	Google   = GoogleService{}
+	Google = GoogleService{}
+
+	Yandex = YandexService{}
+
 	MyMemory = MyMemoryService{}
+
+	JustTranslate = JustTranslateService{}
 
 	DeepL = DeepLService{
 		key: os.Getenv("DEEPL_AUTHKEY"),
-	}
-
-	Yandex = YandexService{
-		sid:    atomic.NewString(""),
-		urlSID: "https://translate.yandex.ru",
-		urlAPI: "https://translate.yandex.net/api/v1/tr.json/translate",
 	}
 )

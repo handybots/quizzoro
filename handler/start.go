@@ -1,28 +1,20 @@
 package handler
 
 import (
-	"database/sql"
-	"time"
-
 	"github.com/handybots/quizzoro/storage"
 	tele "gopkg.in/tucnak/telebot.v3"
 )
 
-func (h Handler) OnStart(c tele.Context) error {
-	return h.onStart(c)
-}
-
-func (h Handler) OnCategories(c tele.Context) error {
-	return h.onCategories(c)
-}
-
-func (h Handler) onStart(c tele.Context) error {
-	var created bool
-	m := c.Message()
+func (h handler) OnStart(c tele.Context) error {
+	var (
+		m      = c.Message()
+		group  = m.FromGroup()
+		exists = false
+	)
 
 	user, err := h.db.Users.ByID(c.Chat().ID)
-	if created = err == sql.ErrNoRows; created {
-		if m.FromGroup() {
+	if exists = err == nil; !exists {
+		if group {
 			err = h.db.Users.Create(c.Chat().ID)
 		} else {
 			err = h.db.Users.Create(int64(c.Sender().ID))
@@ -36,22 +28,27 @@ func (h Handler) onStart(c tele.Context) error {
 		return h.sendStop(c)
 	}
 
-	if err := c.Send(
-		h.lt.Text(c, "start", c.Chat()),
-		h.lt.Markup(c, "menu"),
-		tele.ModeHTML,
-	); err != nil {
-		return err
+	if !group || !exists {
+		if _, err := h.b.Send(
+			c.Chat(),
+			h.lt.Text(c, "start", c.Chat()),
+			h.menuMarkup(c),
+			tele.ModeHTML,
+		); err != nil {
+			return err
+		}
 	}
 
-	if created && !c.Message().FromGroup() {
-		<-time.After(3 * time.Second)
-		return h.onSettings(c)
+	if group {
+		return h.OnCategories(c)
+	} else if !exists {
+		return h.OnSettings(c)
 	}
+
 	return nil
 }
 
-func (h Handler) onCategories(c tele.Context) error {
+func (h handler) OnCategories(c tele.Context) error {
 	state, err := h.db.Users.State(c.Chat().ID)
 	if err != nil {
 		return err
@@ -62,14 +59,24 @@ func (h Handler) onCategories(c tele.Context) error {
 	return h.sendCategories(c)
 }
 
-func (h Handler) sendCategories(c tele.Context) error {
-	return c.Send(
+func (h handler) sendCategories(c tele.Context) error {
+	_, err := h.b.Send(
+		c.Chat(),
 		h.lt.Text(c, "categories"),
 		h.lt.Markup(c, "categories"),
 		tele.ModeHTML,
 	)
+	return err
 }
 
-func (h Handler) sendStop(c tele.Context) error {
-	return c.Send(h.lt.Text(c, "stop"), tele.ModeHTML)
+func (h handler) sendStop(c tele.Context) error {
+	_, err := h.b.Send(c.Chat(), h.lt.Text(c, "stop"), tele.ModeHTML)
+	return err
+}
+
+func (h handler) menuMarkup(c tele.Context) *tele.ReplyMarkup {
+	if c.Message().FromGroup() {
+		return nil
+	}
+	return h.lt.Markup(c, "menu")
 }
