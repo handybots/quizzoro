@@ -5,7 +5,7 @@ settings:
 config:
   quizzes_chat: -485229751
   open_period: 20s
-  true_false: [ 'Правда', 'Ложь' ]
+  true_false: [ 'Правда', 'Брехня' ]
 
   categories:
     general:        # Σ(565)
@@ -30,16 +30,16 @@ config:
 buttons:
   start: '📊 Старт!'
   stats: '🏆 Рейтинг'
-  skip: 'Пропустить'
-  stop: 'Остановить'
+  skip: 'Пропустити'
+  stop: 'Зупинити'
 
   privacy:
     unique: privacy
     text: |
       {{- if . -}}
-      Отключить анонимность
+      Відключити анонімність
       {{- else -}}
-      Остаться анонимным
+      Лишитись анонімним
       {{- end -}}
 
   category:
@@ -47,28 +47,28 @@ buttons:
   general:
     unique: category
     callback_data: general
-    text: 'Общее'
+    text: 'Загальне'
   world:
     unique: category
     callback_data: world
-    text: 'Мир'
+    text: 'Світ'
   games:
     unique: category
     callback_data: games
-    text: 'Игры'
+    text: 'Ігри'
   film:
     unique: category
     callback_data: film
-    text: 'Фильмы'
+    text: 'Фільми'
   random:
     unique: category
     callback_data: random
-    text: 'Случайная'
+    text: 'Випадкова'
 
   bad_quiz:
     unique: bad_quiz
     callback_data: '{{.}}'
-    text: 'Удалить'
+    text: 'Видалити'
   bad_answers:
     unique: bad_answers
     callback_data: '{{.}}'
