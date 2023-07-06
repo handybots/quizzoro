@@ -61,7 +61,7 @@ func main() {
 
 	b.OnError = h.OnError
 	b.Use(middleware.Logger(logrus.StandardLogger(), h.LoggerFields))
-	b.Use(lt.Middleware("ru"))
+	b.Use(lt.Middleware("uk"))
 
 	b.Handle("/start", h.OnStart)
 	b.Handle("/settings", h.OnSettings)
